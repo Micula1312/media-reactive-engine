@@ -7,6 +7,9 @@ let lastBeatAt = 0;
 let energyHistory = [];
 let lastPost = 0;
 
+const baseBpm = {a: null, b: null};
+const bpmAnalysisToken = {a: 0, b: 0};
+
 const audioEls = {
   a: document.querySelector("#audio-a"),
   b: document.querySelector("#audio-b"),
@@ -62,6 +65,135 @@ function applyCrossfader() {
     Number(document.querySelector("#dj-volume-b").value) * Math.sin(x * Math.PI / 2);
 }
 
+function updateBpmDisplay(deck) {
+  const el = document.querySelector(`#dj-bpm-${deck}`);
+  const bpm = baseBpm[deck];
+  if (!bpm) {
+    if (!el.dataset.status) el.textContent = "—";
+    return;
+  }
+  const speed = Number(document.querySelector(`#dj-speed-${deck}`).value || 1);
+  el.dataset.status = "ready";
+  el.textContent = (bpm * speed).toFixed(1);
+}
+
+function normalizeBpm(bpm) {
+  if (!Number.isFinite(bpm) || bpm <= 0) return null;
+  while (bpm < 70) bpm *= 2;
+  while (bpm > 180) bpm /= 2;
+  return bpm;
+}
+
+function estimateBpmFromBuffer(buffer) {
+  const sampleRate = buffer.sampleRate;
+  const channels = buffer.numberOfChannels;
+  const length = buffer.length;
+  const step = 1024;
+  const envelope = [];
+
+  for (let start = 0; start < length; start += step) {
+    const end = Math.min(length, start + step);
+    let sum = 0;
+    let count = 0;
+    for (let c = 0; c < channels; c++) {
+      const data = buffer.getChannelData(c);
+      for (let i = start; i < end; i += 4) {
+        sum += Math.abs(data[i]);
+        count++;
+      }
+    }
+    envelope.push(count ? sum / count : 0);
+  }
+
+  if (envelope.length < 20) return null;
+
+  const smooth = envelope.map((_, i) => {
+    let s = 0;
+    let n = 0;
+    for (let k = Math.max(0, i - 2); k <= Math.min(envelope.length - 1, i + 2); k++) {
+      s += envelope[k];
+      n++;
+    }
+    return s / n;
+  });
+
+  const mean = smooth.reduce((a, b) => a + b, 0) / smooth.length;
+  const variance = smooth.reduce((a, b) => a + (b - mean) ** 2, 0) / smooth.length;
+  const threshold = mean + Math.sqrt(variance) * 0.75;
+
+  const peaks = [];
+  const minPeakDistanceFrames = Math.max(1, Math.floor((60 / 190) * sampleRate / step));
+  let lastPeak = -minPeakDistanceFrames;
+
+  for (let i = 1; i < smooth.length - 1; i++) {
+    if (
+      smooth[i] > threshold &&
+      smooth[i] >= smooth[i - 1] &&
+      smooth[i] > smooth[i + 1] &&
+      i - lastPeak >= minPeakDistanceFrames
+    ) {
+      peaks.push(i);
+      lastPeak = i;
+    }
+  }
+
+  if (peaks.length < 4) return null;
+
+  const histogram = new Map();
+  for (let i = 0; i < peaks.length; i++) {
+    for (let j = i + 1; j < Math.min(peaks.length, i + 9); j++) {
+      const intervalFrames = peaks[j] - peaks[i];
+      const seconds = (intervalFrames * step) / sampleRate;
+      if (!seconds) continue;
+      let bpm = normalizeBpm((60 / seconds) * (j - i));
+      if (!bpm || bpm < 70 || bpm > 180) continue;
+      const bucket = Math.round(bpm * 2) / 2;
+      histogram.set(bucket, (histogram.get(bucket) || 0) + 1);
+    }
+  }
+
+  if (!histogram.size) return null;
+  const ranked = [...histogram.entries()].sort((a, b) => b[1] - a[1]);
+  const winner = ranked[0][0];
+
+  const nearby = ranked
+    .filter(([bpm]) => Math.abs(bpm - winner) <= 2)
+    .slice(0, 5);
+  const weight = nearby.reduce((sum, [, count]) => sum + count, 0);
+  const weighted = nearby.reduce((sum, [bpm, count]) => sum + bpm * count, 0) / weight;
+  return normalizeBpm(weighted);
+}
+
+async function analyzeTrackBpm(deck, item) {
+  const token = ++bpmAnalysisToken[deck];
+  const el = document.querySelector(`#dj-bpm-${deck}`);
+  baseBpm[deck] = null;
+  el.dataset.status = "analyzing";
+  el.textContent = "…";
+
+  try {
+    const response = await fetch(item.url, {cache: "force-cache"});
+    if (!response.ok) throw new Error(`BPM fetch failed: ${response.status}`);
+    const bytes = await response.arrayBuffer();
+    const decodeContext = new AudioContext();
+    const decoded = await decodeContext.decodeAudioData(bytes.slice(0));
+    const bpm = estimateBpmFromBuffer(decoded);
+    await decodeContext.close();
+
+    if (token !== bpmAnalysisToken[deck]) return;
+    baseBpm[deck] = bpm;
+    el.dataset.status = bpm ? "ready" : "failed";
+    el.textContent = bpm ? bpm.toFixed(1) : "?";
+    updateBpmDisplay(deck);
+  } catch (error) {
+    console.warn("BPM analysis failed", error);
+    if (token !== bpmAnalysisToken[deck]) return;
+    baseBpm[deck] = null;
+    el.dataset.status = "failed";
+    el.textContent = "?";
+  }
+}
+
 function loadTrack(deck, item) {
   ensureAudioGraph();
   const audio = audioEls[deck];
@@ -69,6 +201,7 @@ function loadTrack(deck, item) {
   audio.load();
   audio.dataset.path = item.path;
   document.querySelector(`#dj-title-${deck}`).textContent = item.name;
+  analyzeTrackBpm(deck, item);
   audio.play().catch(console.error);
   document.querySelector(`#dj-play-${deck}`).textContent = "PAUSE";
 }
@@ -122,7 +255,10 @@ function bindDeck(deck) {
     if (audio.src) audio.play();
   };
   document.querySelector(`#dj-volume-${deck}`).oninput = applyCrossfader;
-  speed.oninput = () => audio.playbackRate = Number(speed.value);
+  speed.oninput = () => {
+    audio.playbackRate = Number(speed.value);
+    updateBpmDisplay(deck);
+  };
 
   seek.oninput = () => {
     if (Number.isFinite(audio.duration)) audio.currentTime = Number(seek.value) * audio.duration;
