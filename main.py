@@ -19,6 +19,8 @@ def empty_deck():
         "opacity": 1.0,
         "scale": 1.0,
         "speed": 1.0,
+        "cut_token": None,
+        "cut_position": None,
     }
 
 VISUAL_STATE = {
@@ -38,6 +40,7 @@ AUDIO_STATE = {
     "mid": 0.0,
     "high": 0.0,
     "beat": False,
+    "beat_count": 0,
     "crossfader": 0.0,
     "deck_a": None,
     "deck_b": None,
