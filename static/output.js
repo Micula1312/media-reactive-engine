@@ -1,71 +1,90 @@
-const video = document.querySelector("#video-layer");
-const image = document.querySelector("#image-layer");
+const layers = {
+  a: {
+    host: document.querySelector("#layer-a"),
+    video: document.querySelector("#layer-a video"),
+    image: document.querySelector("#layer-a img"),
+    last: null,
+  },
+  b: {
+    host: document.querySelector("#layer-b"),
+    video: document.querySelector("#layer-b video"),
+    image: document.querySelector("#layer-b img"),
+    last: null,
+  },
+};
+
 const blackout = document.querySelector("#blackout-layer");
+const beatFlash = document.querySelector("#beat-flash");
 
-let lastMediaPath = null;
-
-async function readState() {
-  const response = await fetch("/api/state", {cache: "no-store"});
-  return response.json();
+async function json(url) {
+  const r = await fetch(url, {cache: "no-store"});
+  return r.json();
 }
 
-function showMedia(media) {
+function loadLayer(layer, media) {
   if (!media) {
-    video.style.display = "none";
-    image.style.display = "none";
+    layer.video.style.display = "none";
+    layer.image.style.display = "none";
+    layer.last = null;
     return;
   }
+  if (layer.last === media.path) return;
 
   if (media.kind === "video") {
-    image.style.display = "none";
-    video.style.display = "block";
-
-    if (lastMediaPath !== media.path) {
-      video.src = media.url;
-      video.load();
-      video.play().catch(() => {});
-    }
+    layer.image.style.display = "none";
+    layer.video.style.display = "block";
+    layer.video.src = media.url;
+    layer.video.load();
+    layer.video.play().catch(() => {});
   } else {
-    video.style.display = "none";
-    image.style.display = "block";
-
-    if (lastMediaPath !== media.path) {
-      image.src = media.url;
-    }
+    layer.video.style.display = "none";
+    layer.image.style.display = "block";
+    layer.image.src = media.url;
   }
-
-  lastMediaPath = media.path;
+  layer.last = media.path;
 }
 
-function applyState(state) {
-  showMedia(state.media);
+function applyDeck(name, deck, opacity, audio, visual) {
+  const layer = layers[name];
+  loadLayer(layer, deck.media);
 
-  const layer = state.media?.kind === "video" ? video : image;
+  const target = deck.media?.kind === "video" ? layer.video : layer.image;
+  const reactive = visual.audio_reactive ? visual.reactivity : 0;
+  const bassScale = 1 + (audio.bass || 0) * reactive * 0.12;
+  const highBrightness = 1 + (audio.high || 0) * reactive * 0.45;
 
-  layer.style.opacity = state.opacity;
-  layer.style.transform = `scale(${state.scale})`;
+  layer.host.style.opacity = opacity * deck.opacity;
+  target.style.transform = `scale(${deck.scale * bassScale})`;
+  target.style.filter = `brightness(${highBrightness})`;
 
-  if (state.media?.kind === "video") {
-    video.playbackRate = state.speed;
-
-    if (state.playing && video.paused) {
-      video.play().catch(() => {});
-    } else if (!state.playing && !video.paused) {
-      video.pause();
-    }
+  if (deck.media?.kind === "video") {
+    layer.video.playbackRate = deck.speed;
+    if (deck.playing && layer.video.paused) layer.video.play().catch(() => {});
+    if (!deck.playing && !layer.video.paused) layer.video.pause();
   }
-
-  blackout.classList.toggle("on", state.blackout);
 }
 
 async function tick() {
   try {
-    const state = await readState();
-    applyState(state);
-  } catch (error) {
-    console.error(error);
+    const [visual, audio] = await Promise.all([
+      json("/api/visual-state"),
+      json("/api/audio-state"),
+    ]);
+
+    const x = Math.max(0, Math.min(1, visual.crossfader));
+    const opacityA = Math.cos(x * Math.PI / 2);
+    const opacityB = Math.sin(x * Math.PI / 2);
+
+    applyDeck("a", visual.decks.a, opacityA, audio, visual);
+    applyDeck("b", visual.decks.b, opacityB, audio, visual);
+
+    blackout.classList.toggle("on", visual.blackout);
+    beatFlash.style.opacity = visual.audio_reactive && audio.beat
+      ? Math.min(.35, visual.reactivity * .35)
+      : 0;
+  } catch (e) {
+    console.error(e);
   }
 }
-
-setInterval(tick, 100);
+setInterval(tick, 70);
 tick();

@@ -8,61 +8,77 @@
 </head>
 <body class="regia-page">
   <header class="topbar">
-    <div>
-      <strong>MEDIA REACTIVE ENGINE</strong>
-      <span class="muted">REGIA</span>
-    </div>
-    <a href="/output" target="_blank">APRI OUTPUT ↗</a>
+    <div><strong>MEDIA REACTIVE ENGINE</strong> <span class="muted">VISUAL MIXER</span></div>
+    <nav><a href="/dj" target="_blank">DJ ↗</a><a href="/output" target="_blank">OUTPUT ↗</a></nav>
   </header>
 
-  <main class="mixer">
-    <section class="panel library-panel">
-      <div class="panel-title">MEDIATECA</div>
+  <main class="visual-console">
+    <aside class="panel library-panel">
+      <div class="panel-title">MEDIATECA / VISUAL</div>
       <div id="library-status" class="muted">Caricamento…</div>
       <div id="folders"></div>
-    </section>
+    </aside>
 
-    <section class="panel deck-panel">
-      <div class="panel-title">DECK A</div>
+    <section class="visual-mixer">
+      <div class="decks-grid">
+        <article class="panel deck-panel" data-deck="a">
+          <div class="deck-title">DECK A <span id="deck-a-folder" class="muted">—</span></div>
+          <div id="preview-a" class="preview"><span class="muted">Seleziona un media per A</span></div>
+          <div class="controls">
+            <label>OPACITY <input id="opacity-a" type="range" min="0" max="1" step=".01" value="1"></label>
+            <label>SCALE <input id="scale-a" type="range" min=".5" max="2.5" step=".01" value="1"></label>
+            <label>SPEED <input id="speed-a" type="range" min=".2" max="3" step=".05" value="1"></label>
+          </div>
+          <div class="button-row">
+            <button id="play-a">PAUSE</button><button id="random-a">RANDOM A</button>
+          </div>
+          <div class="now-playing"><span class="muted">A</span><strong id="now-a">—</strong></div>
+        </article>
 
-      <div id="preview" class="preview">
-        <span class="muted">Seleziona un media</span>
+        <article class="panel deck-panel" data-deck="b">
+          <div class="deck-title">DECK B <span id="deck-b-folder" class="muted">—</span></div>
+          <div id="preview-b" class="preview"><span class="muted">Seleziona un media per B</span></div>
+          <div class="controls">
+            <label>OPACITY <input id="opacity-b" type="range" min="0" max="1" step=".01" value="1"></label>
+            <label>SCALE <input id="scale-b" type="range" min=".5" max="2.5" step=".01" value="1"></label>
+            <label>SPEED <input id="speed-b" type="range" min=".2" max="3" step=".05" value="1"></label>
+          </div>
+          <div class="button-row">
+            <button id="play-b">PAUSE</button><button id="random-b">RANDOM B</button>
+          </div>
+          <div class="now-playing"><span class="muted">B</span><strong id="now-b">—</strong></div>
+        </article>
       </div>
 
-      <div class="controls">
-        <label>
-          OPACITY
-          <input id="opacity" type="range" min="0" max="1" step="0.01" value="1">
+      <section class="master-strip">
+        <label class="crossfader">
+          <span>A</span>
+          <input id="crossfader" type="range" min="0" max="1" step=".001" value="0">
+          <span>B</span>
         </label>
 
-        <label>
-          SCALE
-          <input id="scale" type="range" min="0.5" max="2.5" step="0.01" value="1">
-        </label>
+        <div class="audio-reactive-block">
+          <label><input id="audio-reactive" type="checkbox" checked> AUDIO REACTIVE</label>
+          <label>AMOUNT <input id="reactivity" type="range" min="0" max="1" step=".01" value=".55"></label>
+          <div class="meters">
+            <div><span>LEVEL</span><i id="meter-level"></i></div>
+            <div><span>BASS</span><i id="meter-bass"></i></div>
+            <div><span>MID</span><i id="meter-mid"></i></div>
+            <div><span>HIGH</span><i id="meter-high"></i></div>
+          </div>
+        </div>
 
-        <label>
-          SPEED
-          <input id="speed" type="range" min="0.2" max="3" step="0.05" value="1">
-        </label>
-
-        <label>
-          REACTIVITY
-          <input id="reactivity" type="range" min="0" max="1" step="0.01" value="0.5">
-        </label>
-      </div>
-
-      <div class="button-row">
-        <button id="play-toggle">PAUSE</button>
-        <button id="random">RANDOM</button>
-        <button id="blackout">BLACKOUT</button>
-      </div>
-
-      <div class="now-playing">
-        <span class="muted">NOW PLAYING</span>
-        <strong id="now-playing">—</strong>
-      </div>
+        <button id="blackout" class="blackout-button">BLACKOUT</button>
+      </section>
     </section>
   </main>
+
+  <div id="deck-picker" class="deck-picker hidden">
+    <span>LOAD TO</span>
+    <button data-target="a">A</button>
+    <button data-target="b">B</button>
+    <button data-target="cancel">×</button>
+  </div>
 
   <script src="/static/regia.js"></script>
 </body>

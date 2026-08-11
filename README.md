@@ -1,48 +1,72 @@
 # Media Reactive Engine
 
-Local visual mixer controlled from a browser.
+Local browser-based visual + DJ performance engine driven by a media library.
 
 ## URLs
 
-- Regia: http://127.0.0.1:5000/regia
-- Output: http://127.0.0.1:5000/output
+- Visual mixer: http://127.0.0.1:5000/regia
+- Visual output: http://127.0.0.1:5000/output
+- DJ console: http://127.0.0.1:5000/dj
 
-## Setup
+## Media library
+
+Default:
+
+```text
+C:\Users\<USER>\Desktop\MEDIATECA
+```
+
+Supported visual formats: mp4, mov, mkv, webm, avi, jpg, jpeg, png, gif, webp, svg.
+
+Supported audio formats: mp3, wav, flac, ogg, m4a, aac.
+
+Suggested structure:
+
+```text
+MEDIATECA/
+├── thematic/
+├── icons/
+├── porno/
+└── audio/
+    ├── tracks/
+    ├── loops/
+    └── samples/
+```
+
+The scan is recursive: folders can be organized however you want.
+
+## Run
 
 ```powershell
-py -m venv .venv
 .\.venv\Scripts\Activate.ps1
 pip install -r requirements.txt
 python main.py
 ```
 
-By default the engine scans:
+## V2
 
-```text
-C:\Users\<USER>\Desktop\mediateca
-```
-
-To use another folder:
-
-```powershell
-$env:MEDIA_REACTIVE_ROOT="D:\path\to\your\mediateca"
-python main.py
-```
-
-## First prototype
-
-The regia currently supports:
-
-- automatic recursive scan of media folders
-- videos, images and SVG files
-- folder browser
-- media selection
-- random media
-- play/pause
+Visual mixer:
+- Deck A + Deck B
+- independent media, opacity, scale, speed and play/pause
+- random load per deck
+- equal-power crossfader
 - blackout
-- opacity
-- scale
-- playback speed
-- reactivity parameter placeholder
+- master audio reactivity
 
-The next step is audio analysis (level, bass, mid, high, beat) and using those values to drive the visual parameters.
+DJ:
+- two real browser audio decks
+- track browser
+- play/pause/restart
+- seek
+- volume
+- playback speed
+- equal-power crossfader
+- master volume
+- real-time Web Audio FFT
+- level / bass / mid / high / beat
+- audio analysis is published to the visual output automatically
+
+First reactive mapping:
+- bass → scale pulse
+- highs → brightness
+- beat → white flash

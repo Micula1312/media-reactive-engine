@@ -4,7 +4,10 @@ from urllib.parse import quote
 VIDEO_EXTENSIONS = {".mp4", ".mov", ".mkv", ".webm", ".avi"}
 IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".gif", ".webp"}
 SVG_EXTENSIONS = {".svg"}
-SUPPORTED_EXTENSIONS = VIDEO_EXTENSIONS | IMAGE_EXTENSIONS | SVG_EXTENSIONS
+AUDIO_EXTENSIONS = {".mp3", ".wav", ".flac", ".ogg", ".m4a", ".aac"}
+SUPPORTED_EXTENSIONS = (
+    VIDEO_EXTENSIONS | IMAGE_EXTENSIONS | SVG_EXTENSIONS | AUDIO_EXTENSIONS
+)
 
 def media_kind(path: Path) -> str:
     ext = path.suffix.lower()
@@ -14,6 +17,8 @@ def media_kind(path: Path) -> str:
         return "image"
     if ext in SVG_EXTENSIONS:
         return "svg"
+    if ext in AUDIO_EXTENSIONS:
+        return "audio"
     return "unknown"
 
 def scan_media_library(root: Path) -> dict:
@@ -49,14 +54,9 @@ def scan_media_library(root: Path) -> dict:
         data["total_files"] += 1
 
     data["folders"] = [
-        {
-            "name": folder,
-            "count": len(items),
-            "items": items,
-        }
+        {"name": folder, "count": len(items), "items": items}
         for folder, items in folders.items()
     ]
-
     return data
 
 def resolve_media_path(root: Path, relative_path: str):

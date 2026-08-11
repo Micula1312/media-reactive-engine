@@ -3,15 +3,19 @@ __pycache__/
 .venv/
 venv/
 .env
-
-# local media must never be committed
 media/
 mediateca/
+MEDIATECA/
 *.mp4
 *.mov
 *.mkv
 *.avi
 *.webm
-
+*.mp3
+*.wav
+*.flac
+*.ogg
+*.m4a
+*.aac
 .DS_Store
 Thumbs.db

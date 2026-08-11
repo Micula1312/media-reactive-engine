@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Media Reactive Engine — DJ</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body class="dj-page">
+  <header class="topbar">
+    <div><strong>MEDIA REACTIVE ENGINE</strong> <span class="muted">DJ CONSOLE</span></div>
+    <nav><a href="/regia" target="_blank">VISUAL ↗</a><a href="/output" target="_blank">OUTPUT ↗</a></nav>
+  </header>
+
+  <main class="dj-console">
+    <aside class="panel library-panel">
+      <div class="panel-title">MEDIATECA / AUDIO</div>
+      <div id="audio-library-status" class="muted">Caricamento…</div>
+      <div id="audio-folders"></div>
+    </aside>
+
+    <section class="dj-mixer">
+      <div class="dj-decks">
+        <article class="dj-deck deck-a">
+          <div class="deck-title">DECK A</div>
+          <div class="track-display">
+            <strong id="dj-title-a">NO TRACK</strong>
+            <span id="dj-time-a">00:00 / 00:00</span>
+          </div>
+          <input id="seek-a" class="seek" type="range" min="0" max="1" step=".001" value="0">
+          <div class="transport">
+            <button id="dj-play-a" class="play-button">PLAY</button>
+            <button id="dj-restart-a">↺</button>
+          </div>
+          <div class="dj-controls">
+            <label>VOLUME <input id="dj-volume-a" type="range" min="0" max="1.2" step=".01" value="1"></label>
+            <label>SPEED <input id="dj-speed-a" type="range" min=".5" max="1.5" step=".01" value="1"></label>
+          </div>
+        </article>
+
+        <section class="dj-master">
+          <div class="panel-title">MASTER</div>
+          <div class="master-meter"><i id="master-meter"></i></div>
+          <div class="fft-readout">
+            <div><span>BASS</span><b id="dj-bass">0.00</b></div>
+            <div><span>MID</span><b id="dj-mid">0.00</b></div>
+            <div><span>HIGH</span><b id="dj-high">0.00</b></div>
+            <div><span>BEAT</span><b id="dj-beat">—</b></div>
+          </div>
+          <label class="vertical-ish">MASTER <input id="master-volume" type="range" min="0" max="1.2" step=".01" value="1"></label>
+        </section>
+
+        <article class="dj-deck deck-b">
+          <div class="deck-title">DECK B</div>
+          <div class="track-display">
+            <strong id="dj-title-b">NO TRACK</strong>
+            <span id="dj-time-b">00:00 / 00:00</span>
+          </div>
+          <input id="seek-b" class="seek" type="range" min="0" max="1" step=".001" value="0">
+          <div class="transport">
+            <button id="dj-play-b" class="play-button">PLAY</button>
+            <button id="dj-restart-b">↺</button>
+          </div>
+          <div class="dj-controls">
+            <label>VOLUME <input id="dj-volume-b" type="range" min="0" max="1.2" step=".01" value="1"></label>
+            <label>SPEED <input id="dj-speed-b" type="range" min=".5" max="1.5" step=".01" value="1"></label>
+          </div>
+        </article>
+      </div>
+
+      <div class="dj-crossfader-wrap">
+        <span>A</span><input id="dj-crossfader" type="range" min="0" max="1" step=".001" value=".5"><span>B</span>
+      </div>
+      <div class="dj-hint muted">Clicca una traccia nella libreria e scegli A o B. Il master alimenta automaticamente le visual.</div>
+    </section>
+  </main>
+
+  <div id="audio-picker" class="deck-picker hidden">
+    <span>LOAD TO</span>
+    <button data-target="a">A</button>
+    <button data-target="b">B</button>
+    <button data-target="cancel">×</button>
+  </div>
+
+  <audio id="audio-a" crossorigin="anonymous"></audio>
+  <audio id="audio-b" crossorigin="anonymous"></audio>
+  <script src="/static/dj.js"></script>
+</body>
+</html>
