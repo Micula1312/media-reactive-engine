@@ -4,12 +4,14 @@ const layers = {
     video: document.querySelector("#layer-a video"),
     image: document.querySelector("#layer-a img"),
     last: null,
+    lastCutToken: null,
   },
   b: {
     host: document.querySelector("#layer-b"),
     video: document.querySelector("#layer-b video"),
     image: document.querySelector("#layer-b img"),
     last: null,
+    lastCutToken: null,
   },
 };
 
@@ -42,13 +44,27 @@ function loadLayer(layer, media) {
     layer.image.src = media.url;
   }
   layer.last = media.path;
+  layer.lastCutToken = null;
+}
+
+function applyRandomCut(layer, deck) {
+  if (deck.media?.kind !== "video") return;
+  if (!deck.cut_token || deck.cut_token === layer.lastCutToken) return;
+  if (!Number.isFinite(layer.video.duration) || layer.video.duration <= 0) return;
+
+  const ratio = Math.max(0, Math.min(0.98, Number(deck.cut_position ?? Math.random())));
+  layer.video.currentTime = ratio * layer.video.duration;
+  layer.lastCutToken = deck.cut_token;
 }
 
 function applyDeck(name, deck, opacity, audio, visual) {
   const layer = layers[name];
   loadLayer(layer, deck.media);
+  applyRandomCut(layer, deck);
 
   const target = deck.media?.kind === "video" ? layer.video : layer.image;
+  if (!target) return;
+
   const reactive = visual.audio_reactive ? visual.reactivity : 0;
   const bassScale = 1 + (audio.bass || 0) * reactive * 0.12;
   const highBrightness = 1 + (audio.high || 0) * reactive * 0.45;
