@@ -9,6 +9,11 @@ let lastPost = 0;
 
 const baseBpm = {a: null, b: null};
 const bpmAnalysisToken = {a: 0, b: 0};
+const cuePoints = {a: null, b: null};
+const loopState = {
+  a: {active: false, beats: 0, start: 0, end: 0},
+  b: {active: false, beats: 0, start: 0, end: 0},
+};
 
 const audioEls = {
   a: document.querySelector("#audio-a"),
@@ -48,10 +53,24 @@ function ensureAudioGraph() {
 
   for (const deck of ["a", "b"]) {
     const source = audioContext.createMediaElementSource(audioEls[deck]);
+    const low = audioContext.createBiquadFilter();
+    low.type = "lowpass";
+    low.frequency.value = 20000;
+    low.Q.value = 0.7;
+
+    const high = audioContext.createBiquadFilter();
+    high.type = "highpass";
+    high.frequency.value = 20;
+    high.Q.value = 0.7;
+
     const gain = audioContext.createGain();
-    source.connect(gain);
+
+    source.connect(low);
+    low.connect(high);
+    high.connect(gain);
     gain.connect(masterGain);
-    deckNodes[deck] = {source, gain};
+
+    deckNodes[deck] = {source, low, high, gain};
   }
   applyCrossfader();
 }
@@ -65,16 +84,49 @@ function applyCrossfader() {
     Number(document.querySelector("#dj-volume-b").value) * Math.sin(x * Math.PI / 2);
 }
 
+function applyFilter(deck) {
+  ensureAudioGraph();
+  const value = Number(document.querySelector(`#dj-filter-${deck}`).value);
+  const {low, high} = deckNodes[deck];
+
+  if (value < 0) {
+    const t = Math.abs(value);
+    low.frequency.value = 20000 * Math.pow(120 / 20000, t);
+    high.frequency.value = 20;
+  } else if (value > 0) {
+    const t = value;
+    high.frequency.value = 20 * Math.pow(6000 / 20, t);
+    low.frequency.value = 20000;
+  } else {
+    low.frequency.value = 20000;
+    high.frequency.value = 20;
+  }
+}
+
+function currentBpm(deck) {
+  const bpm = baseBpm[deck];
+  if (!bpm) return null;
+  return bpm * Number(document.querySelector(`#dj-speed-${deck}`).value || 1);
+}
+
+function updatePitchDisplay(deck) {
+  const speed = Number(document.querySelector(`#dj-speed-${deck}`).value || 1);
+  const pct = (speed - 1) * 100;
+  const sign = pct >= 0 ? "+" : "";
+  document.querySelector(`#dj-pitch-${deck}`).textContent = `${sign}${pct.toFixed(1)}%`;
+}
+
 function updateBpmDisplay(deck) {
   const el = document.querySelector(`#dj-bpm-${deck}`);
-  const bpm = baseBpm[deck];
+  const bpm = currentBpm(deck);
   if (!bpm) {
     if (!el.dataset.status) el.textContent = "—";
+    updatePitchDisplay(deck);
     return;
   }
-  const speed = Number(document.querySelector(`#dj-speed-${deck}`).value || 1);
   el.dataset.status = "ready";
-  el.textContent = (bpm * speed).toFixed(1);
+  el.textContent = bpm.toFixed(1);
+  updatePitchDisplay(deck);
 }
 
 function normalizeBpm(bpm) {
@@ -155,16 +207,47 @@ function estimateBpmFromBuffer(buffer) {
   if (!histogram.size) return null;
   const ranked = [...histogram.entries()].sort((a, b) => b[1] - a[1]);
   const winner = ranked[0][0];
-
-  const nearby = ranked
-    .filter(([bpm]) => Math.abs(bpm - winner) <= 2)
-    .slice(0, 5);
+  const nearby = ranked.filter(([bpm]) => Math.abs(bpm - winner) <= 2).slice(0, 5);
   const weight = nearby.reduce((sum, [, count]) => sum + count, 0);
   const weighted = nearby.reduce((sum, [bpm, count]) => sum + bpm * count, 0) / weight;
   return normalizeBpm(weighted);
 }
 
-async function analyzeTrackBpm(deck, item) {
+function drawWaveform(deck, buffer) {
+  const canvas = document.querySelector(`#waveform-${deck}`);
+  const ctx = canvas.getContext("2d");
+  const width = canvas.width;
+  const height = canvas.height;
+  ctx.clearRect(0, 0, width, height);
+  ctx.fillStyle = "#000";
+  ctx.fillRect(0, 0, width, height);
+
+  const data = buffer.getChannelData(0);
+  const samplesPerPixel = Math.max(1, Math.floor(data.length / width));
+  ctx.strokeStyle = "#fff";
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+
+  for (let x = 0; x < width; x++) {
+    const start = x * samplesPerPixel;
+    const end = Math.min(data.length, start + samplesPerPixel);
+    let min = 1;
+    let max = -1;
+    const stride = Math.max(1, Math.floor(samplesPerPixel / 20));
+    for (let i = start; i < end; i += stride) {
+      const v = data[i];
+      if (v < min) min = v;
+      if (v > max) max = v;
+    }
+    const y1 = (1 - max) * height / 2;
+    const y2 = (1 - min) * height / 2;
+    ctx.moveTo(x + 0.5, y1);
+    ctx.lineTo(x + 0.5, y2);
+  }
+  ctx.stroke();
+}
+
+async function analyzeTrack(deck, item) {
   const token = ++bpmAnalysisToken[deck];
   const el = document.querySelector(`#dj-bpm-${deck}`);
   baseBpm[deck] = null;
@@ -173,20 +256,24 @@ async function analyzeTrackBpm(deck, item) {
 
   try {
     const response = await fetch(item.url, {cache: "force-cache"});
-    if (!response.ok) throw new Error(`BPM fetch failed: ${response.status}`);
+    if (!response.ok) throw new Error(`Track fetch failed: ${response.status}`);
     const bytes = await response.arrayBuffer();
     const decodeContext = new AudioContext();
     const decoded = await decodeContext.decodeAudioData(bytes.slice(0));
-    const bpm = estimateBpmFromBuffer(decoded);
-    await decodeContext.close();
+    if (token !== bpmAnalysisToken[deck]) {
+      await decodeContext.close();
+      return;
+    }
 
-    if (token !== bpmAnalysisToken[deck]) return;
+    drawWaveform(deck, decoded);
+    const bpm = estimateBpmFromBuffer(decoded);
     baseBpm[deck] = bpm;
     el.dataset.status = bpm ? "ready" : "failed";
     el.textContent = bpm ? bpm.toFixed(1) : "?";
     updateBpmDisplay(deck);
+    await decodeContext.close();
   } catch (error) {
-    console.warn("BPM analysis failed", error);
+    console.warn("Track analysis failed", error);
     if (token !== bpmAnalysisToken[deck]) return;
     baseBpm[deck] = null;
     el.dataset.status = "failed";
@@ -194,14 +281,24 @@ async function analyzeTrackBpm(deck, item) {
   }
 }
 
+function resetDeckRuntime(deck) {
+  cuePoints[deck] = null;
+  loopState[deck] = {active: false, beats: 0, start: 0, end: 0};
+  document.querySelector(`#dj-cue-${deck}`).textContent = "SET CUE";
+  document.querySelectorAll(`.loop-strip button[data-deck="${deck}"]`).forEach(b => b.classList.remove("active"));
+  document.querySelector(`#loop-off-${deck}`).classList.remove("active");
+  document.querySelector(`#waveform-playhead-${deck}`).style.left = "0%";
+}
+
 function loadTrack(deck, item) {
   ensureAudioGraph();
+  resetDeckRuntime(deck);
   const audio = audioEls[deck];
   audio.src = item.url;
   audio.load();
   audio.dataset.path = item.path;
   document.querySelector(`#dj-title-${deck}`).textContent = item.name;
-  analyzeTrackBpm(deck, item);
+  analyzeTrack(deck, item);
   audio.play().catch(console.error);
   document.querySelector(`#dj-play-${deck}`).textContent = "PAUSE";
 }
@@ -238,7 +335,54 @@ function renderLibrary() {
   }
 }
 
+function setLoop(deck, beats) {
+  const bpm = currentBpm(deck);
+  const audio = audioEls[deck];
+  if (!bpm || !audio.src) return;
+
+  const duration = (60 / bpm) * beats;
+  const start = audio.currentTime;
+  loopState[deck] = {active: true, beats, start, end: start + duration};
+
+  document.querySelectorAll(`.loop-strip button[data-deck="${deck}"]`).forEach(b => {
+    b.classList.toggle("active", Number(b.dataset.beats) === Number(beats));
+  });
+  document.querySelector(`#loop-off-${deck}`).classList.remove("active");
+}
+
+function disableLoop(deck) {
+  loopState[deck].active = false;
+  document.querySelectorAll(`.loop-strip button[data-deck="${deck}"]`).forEach(b => b.classList.remove("active"));
+  document.querySelector(`#loop-off-${deck}`).classList.add("active");
+}
+
+function syncDeck(deck, targetDeck) {
+  const ownBaseBpm = baseBpm[deck];
+  const targetBpm = currentBpm(targetDeck);
+  if (!ownBaseBpm || !targetBpm) return;
+
+  const speed = Math.max(0.5, Math.min(1.5, targetBpm / ownBaseBpm));
+  const speedEl = document.querySelector(`#dj-speed-${deck}`);
+  speedEl.value = speed;
+  audioEls[deck].playbackRate = speed;
+  updateBpmDisplay(deck);
+  speedEl.classList.add("synced");
+  setTimeout(() => speedEl.classList.remove("synced"), 450);
+}
+
+function bindWaveform(deck) {
+  const canvas = document.querySelector(`#waveform-${deck}`);
+  canvas.addEventListener("click", e => {
+    const audio = audioEls[deck];
+    if (!Number.isFinite(audio.duration)) return;
+    const rect = canvas.getBoundingClientRect();
+    const ratio = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+    audio.currentTime = ratio * audio.duration;
+  });
+}
+
 function bindDeck(deck) {
+  const other = deck === "a" ? "b" : "a";
   const audio = audioEls[deck];
   const play = document.querySelector(`#dj-play-${deck}`);
   const seek = document.querySelector(`#seek-${deck}`);
@@ -250,11 +394,27 @@ function bindDeck(deck) {
     if (audio.paused) audio.play();
     else audio.pause();
   };
+
   document.querySelector(`#dj-restart-${deck}`).onclick = () => {
     audio.currentTime = 0;
     if (audio.src) audio.play();
   };
+
+  document.querySelector(`#dj-cue-${deck}`).onclick = () => {
+    if (!audio.src) return;
+    cuePoints[deck] = audio.currentTime;
+    document.querySelector(`#dj-cue-${deck}`).textContent = `CUE ${fmt(cuePoints[deck])}`;
+  };
+
+  document.querySelector(`#dj-cue-go-${deck}`).onclick = () => {
+    if (cuePoints[deck] == null) return;
+    audio.currentTime = cuePoints[deck];
+  };
+
+  document.querySelector(`#dj-sync-${deck}`).onclick = () => syncDeck(deck, other);
   document.querySelector(`#dj-volume-${deck}`).oninput = applyCrossfader;
+  document.querySelector(`#dj-filter-${deck}`).oninput = () => applyFilter(deck);
+
   speed.oninput = () => {
     audio.playbackRate = Number(speed.value);
     updateBpmDisplay(deck);
@@ -264,14 +424,24 @@ function bindDeck(deck) {
     if (Number.isFinite(audio.duration)) audio.currentTime = Number(seek.value) * audio.duration;
   };
 
+  document.querySelectorAll(`.loop-strip button[data-deck="${deck}"]`).forEach(button => {
+    button.onclick = () => setLoop(deck, Number(button.dataset.beats));
+  });
+  document.querySelector(`#loop-off-${deck}`).onclick = () => disableLoop(deck);
+
   audio.addEventListener("play", () => play.textContent = "PAUSE");
   audio.addEventListener("pause", () => play.textContent = "PLAY");
   audio.addEventListener("timeupdate", () => {
+    const loop = loopState[deck];
+    if (loop.active && audio.currentTime >= loop.end) audio.currentTime = loop.start;
+
     const ratio = audio.duration ? audio.currentTime / audio.duration : 0;
     seek.value = ratio || 0;
-    document.querySelector(`#dj-time-${deck}`).textContent =
-      `${fmt(audio.currentTime)} / ${fmt(audio.duration)}`;
+    document.querySelector(`#waveform-playhead-${deck}`).style.left = `${(ratio || 0) * 100}%`;
+    document.querySelector(`#dj-time-${deck}`).textContent = `${fmt(audio.currentTime)} / ${fmt(audio.duration)}`;
   });
+
+  bindWaveform(deck);
 }
 
 function bandAverage(data, fromHz, toHz) {
@@ -313,6 +483,7 @@ function analyze() {
   if (beat) lastBeatAt = now;
 
   document.querySelector("#master-meter").style.height = `${level * 100}%`;
+  document.querySelector("#dj-level").textContent = level.toFixed(2);
   document.querySelector("#dj-bass").textContent = bass.toFixed(2);
   document.querySelector("#dj-mid").textContent = mid.toFixed(2);
   document.querySelector("#dj-high").textContent = high.toFixed(2);
@@ -358,6 +529,8 @@ async function init() {
     };
   });
 
+  updatePitchDisplay("a");
+  updatePitchDisplay("b");
   analyze();
 }
 init().catch(console.error);
