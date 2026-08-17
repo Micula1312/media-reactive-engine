@@ -3,19 +3,19 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Media Reactive Engine — Regia</title>
+  <title>magic-mic — Video</title>
   <link rel="stylesheet" href="/static/style.css">
   <link rel="stylesheet" href="/static/beatswitch.css">
 </head>
 <body class="regia-page">
   <header class="topbar">
-    <div><strong>MEDIA REACTIVE ENGINE</strong> <span class="muted">VISUAL MIXER</span></div>
+    <div><strong>magic-mic</strong> <span class="muted">VIDEO MIXER</span></div>
     <nav><a href="/dj" target="_blank">DJ ↗</a><a href="/output" target="_blank">OUTPUT ↗</a></nav>
   </header>
 
   <main class="visual-console">
     <aside class="panel library-panel">
-      <div class="panel-title">MEDIATECA / VISUAL</div>
+      <div class="panel-title">MEDIATECA / VIDEO</div>
       <div id="library-status" class="muted">Caricamento…</div>
       <div id="folders"></div>
     </aside>
@@ -23,6 +23,10 @@
     <section class="visual-mixer">
       <section class="master-strip compact-master-strip">
         <label class="crossfader"><span>A</span><input id="crossfader" type="range" min="0" max="1" step=".001" value="0"><span>B</span></label>
+        <div class="inline-reactivity">
+          <label class="toggle-line"><input id="audio-reactive" type="checkbox" checked> AUDIO REACTIVE</label>
+          <label>AMOUNT <input id="reactivity" data-midi-param="video.reactivity" type="range" min="0" max="1" step=".01" value=".55"></label>
+        </div>
       </section>
 
       <div class="decks-grid">
@@ -63,12 +67,23 @@
         </article>
       </div>
 
-      <section class="output-preview-panel">
+      <section id="output-preview-panel" class="output-preview-panel">
         <div class="output-preview-head">
-          <div><span class="panel-title">LIVE OUTPUT</span><span class="muted"> / preview compositing finale</span></div>
-          <a class="output-preview-open" href="/output" target="_blank">OPEN FULLSCREEN ↗</a>
+          <div><span class="panel-title">LIVE OUTPUT</span><span class="muted"> / compositing finale</span></div>
+          <div class="output-preview-actions"><button id="detach-output" type="button">DETACH ↗</button><a class="output-preview-open" href="/output" target="_blank">FULLSCREEN ↗</a></div>
         </div>
-        <div class="output-preview-frame"><iframe src="/output" title="Live output preview" loading="eager"></iframe></div>
+        <div class="output-preview-frame"><iframe id="embedded-output" src="/output" title="Live output preview" loading="eager"></iframe></div>
+        <div class="detached-placeholder">OUTPUT DETACHED — popup attivo</div>
+      </section>
+
+      <section class="text-overlay-panel">
+        <div class="panel-title">TEXT OVERLAY</div>
+        <div class="text-overlay-controls">
+          <button id="text-toggle" type="button">TEXT OFF</button>
+          <input id="text-content" type="text" placeholder="scrivi il testo da sovrapporre…">
+          <label>SIZE <input id="text-size" data-midi-param="video.text_size" type="range" min="12" max="180" step="1" value="64"></label>
+          <label>OPACITY <input id="text-opacity" data-midi-param="video.text_opacity" type="range" min="0" max="1" step=".01" value="1"></label>
+        </div>
       </section>
     </section>
   </main>
