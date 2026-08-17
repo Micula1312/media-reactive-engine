@@ -29,6 +29,21 @@ async function loadConfig() {
   return config;
 }
 
+async function getVisualState() {
+  const response = await fetch('/api/visual-state', {cache: 'no-store'});
+  return response.json();
+}
+
+async function patchVisualState(patch) {
+  const response = await fetch('/api/visual-state', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify(patch),
+  });
+  if (!response.ok) throw new Error(`Visual state update failed: ${response.status}`);
+  return response.json();
+}
+
 function frameBase(frame) {
   if (frame.id === 'output-frame') return '/output';
   if (frame.id.startsWith('dj')) return '/dj';
@@ -91,6 +106,20 @@ function postToDj(type, payload = {}) {
   djFrame.contentWindow.postMessage({source: 'media-reactive-console', type, ...payload}, '*');
 }
 
+function bindRange(id, key, {audioMessage = null} = {}) {
+  const el = document.querySelector(`#${id}`);
+  if (!el) return;
+  el.addEventListener('input', async event => {
+    const value = Number(event.target.value);
+    try {
+      await patchVisualState({[key]: value});
+    } catch (error) {
+      console.error(error);
+    }
+    if (audioMessage) postToDj(audioMessage, {value});
+  });
+}
+
 const masterVolume = document.querySelector('#console-master-volume');
 const micToggle = document.querySelector('#mic-toggle');
 const micGain = document.querySelector('#mic-gain');
@@ -113,6 +142,48 @@ recordToggle?.addEventListener('click', () => {
   recording = !recording;
   postToDj(recording ? 'record-start' : 'record-stop');
 });
+
+// VIDEO MASTER — final compositing controls.
+bindRange('video-master-opacity', 'master_opacity');
+bindRange('video-master-brightness', 'master_brightness');
+bindRange('video-master-contrast', 'master_contrast');
+bindRange('video-master-saturation', 'master_saturation');
+bindRange('video-master-hue', 'master_hue');
+bindRange('video-master-blur', 'master_blur');
+
+// SHARED MACROS — deliberately generic and tagged with data-midi-param in the
+// HTML so the next MIDI layer can bind CC values without changing the UI.
+bindRange('common-intensity', 'common_intensity', {audioMessage: 'common-intensity'});
+bindRange('common-filter', 'common_filter', {audioMessage: 'common-filter'});
+bindRange('common-pulse', 'common_pulse', {audioMessage: 'common-pulse'});
+bindRange('common-strobe', 'common_strobe');
+
+async function hydrateMasterControls() {
+  const state = await getVisualState();
+  const mapping = {
+    'video-master-opacity': 'master_opacity',
+    'video-master-brightness': 'master_brightness',
+    'video-master-contrast': 'master_contrast',
+    'video-master-saturation': 'master_saturation',
+    'video-master-hue': 'master_hue',
+    'video-master-blur': 'master_blur',
+    'common-intensity': 'common_intensity',
+    'common-filter': 'common_filter',
+    'common-pulse': 'common_pulse',
+    'common-strobe': 'common_strobe',
+  };
+  for (const [id, key] of Object.entries(mapping)) {
+    const el = document.querySelector(`#${id}`);
+    if (el && state[key] != null) el.value = state[key];
+  }
+
+  // Re-apply shared audio macros after the DJ iframe has had a chance to boot.
+  setTimeout(() => {
+    postToDj('common-intensity', {value: Number(state.common_intensity || 0)});
+    postToDj('common-filter', {value: Number(state.common_filter || 0)});
+    postToDj('common-pulse', {value: Number(state.common_pulse || 0)});
+  }, 500);
+}
 
 window.addEventListener('message', event => {
   const data = event.data;
@@ -156,10 +227,11 @@ chooseFolderButton.addEventListener('click', async () => {
 reloadButton.addEventListener('click', () => {
   reloadFrames();
   loadConfig().catch(console.error);
+  hydrateMasterControls().catch(console.error);
   showStatus('Media library rescanned.');
 });
 
-loadConfig().catch(error => {
+Promise.all([loadConfig(), hydrateMasterControls()]).catch(error => {
   console.error(error);
   showStatus(`ERROR: ${error.message}`, 6000);
 });
