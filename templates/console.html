@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Media Reactive Engine — Console</title>
+  <link rel="stylesheet" href="/static/console.css">
+</head>
+<body>
+  <header class="console-topbar">
+    <div class="brand">
+      <strong>MEDIA REACTIVE ENGINE</strong>
+      <span>DJ + VJ CONSOLE</span>
+    </div>
+
+    <div class="media-root-control">
+      <span class="label">MEDIA ROOT</span>
+      <strong id="media-root">loading…</strong>
+      <button id="choose-folder">CHOOSE MEDIA FOLDER</button>
+      <button id="reload-all">RESCAN / RELOAD</button>
+    </div>
+
+    <div class="layout-controls">
+      <button data-layout="all" class="active">ALL</button>
+      <button data-layout="vj">VJ</button>
+      <button data-layout="dj">DJ</button>
+      <a href="/output" target="_blank">OUTPUT ↗</a>
+    </div>
+  </header>
+
+  <main id="console-grid" class="console-grid layout-all">
+    <section class="console-panel output-panel">
+      <div class="panel-head">
+        <span>LIVE OUTPUT</span>
+        <a href="/output" target="_blank">FULLSCREEN ↗</a>
+      </div>
+      <iframe id="output-frame" src="/output" title="Live output"></iframe>
+    </section>
+
+    <section class="console-panel dj-panel">
+      <div class="panel-head">
+        <span>DJ</span>
+        <a href="/dj" target="_blank">OPEN ↗</a>
+      </div>
+      <iframe id="dj-frame" src="/dj" title="DJ console"></iframe>
+    </section>
+
+    <section class="console-panel vj-panel">
+      <div class="panel-head">
+        <span>VJ / REGIA VIDEO</span>
+        <a href="/regia" target="_blank">OPEN ↗</a>
+      </div>
+      <iframe id="vj-frame" src="/regia" title="VJ console"></iframe>
+    </section>
+  </main>
+
+  <div id="folder-status" class="folder-status hidden"></div>
+  <script src="/static/console.js"></script>
+</body>
+</html>
