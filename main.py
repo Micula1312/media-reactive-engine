@@ -8,44 +8,63 @@ from media_library import scan_media_library, resolve_media_path
 
 app = Flask(__name__)
 
-PROJECT_ROOT = Path(__file__).resolve().parent
-CONFIG_FILE = PROJECT_ROOT / ".media-reactive-config.json"
-DEFAULT_MEDIA_ROOT = Path.home() / "Desktop" / "media-collection" / "mediateca"
+APP_NAME = "Media Reactive Engine"
+if os.name == "nt":
+    APP_DATA_ROOT = Path(os.environ.get("LOCALAPPDATA", Path.home())) / APP_NAME
+else:
+    APP_DATA_ROOT = Path.home() / ".media-reactive-engine"
+
+CONFIG_FILE = APP_DATA_ROOT / "config.json"
+DEFAULT_COLLECTION_ROOT = Path.home() / "Documents" / APP_NAME / "Media Collection"
+DEFAULT_VISUAL_ROOT = DEFAULT_COLLECTION_ROOT / "video"
+DEFAULT_AUDIO_ROOT = DEFAULT_COLLECTION_ROOT / "audio"
 
 
-def load_saved_media_root():
-    env_root = os.environ.get("MEDIA_REACTIVE_ROOT")
-    if env_root:
-        return Path(env_root).expanduser().resolve()
+def ensure_app_folders():
+    APP_DATA_ROOT.mkdir(parents=True, exist_ok=True)
+    DEFAULT_VISUAL_ROOT.mkdir(parents=True, exist_ok=True)
+    DEFAULT_AUDIO_ROOT.mkdir(parents=True, exist_ok=True)
 
+
+def load_config():
+    ensure_app_folders()
+    data = {}
     try:
         if CONFIG_FILE.exists():
             data = json.loads(CONFIG_FILE.read_text(encoding="utf-8"))
-            saved = data.get("media_root")
-            if saved:
-                return Path(saved).expanduser().resolve()
     except (OSError, json.JSONDecodeError, TypeError):
-        pass
+        data = {}
 
-    return DEFAULT_MEDIA_ROOT.expanduser().resolve()
+    collection = Path(data.get("collection_root") or DEFAULT_COLLECTION_ROOT).expanduser().resolve()
+    visual = Path(data.get("visual_root") or (collection / "video")).expanduser().resolve()
+    audio = Path(data.get("audio_root") or (collection / "audio")).expanduser().resolve()
+
+    collection.mkdir(parents=True, exist_ok=True)
+    visual.mkdir(parents=True, exist_ok=True)
+    audio.mkdir(parents=True, exist_ok=True)
+    return collection, visual, audio
 
 
-def save_media_root(path: Path):
+def save_config():
+    APP_DATA_ROOT.mkdir(parents=True, exist_ok=True)
     CONFIG_FILE.write_text(
-        json.dumps({"media_root": str(path)}, indent=2),
+        json.dumps({
+            "collection_root": str(MEDIA_ROOT),
+            "visual_root": str(VISUAL_ROOT),
+            "audio_root": str(AUDIO_ROOT),
+        }, indent=2),
         encoding="utf-8",
     )
 
 
-def choose_folder(initial_dir: Path | None = None):
-    """Open the native folder picker on the computer running Flask."""
+def choose_folder(initial_dir: Path | None = None, title: str = "Choose Media Folder"):
     initial = str(initial_dir or Path.home())
 
     if os.name == "nt":
         script = (
             "Add-Type -AssemblyName System.Windows.Forms; "
             "$d = New-Object System.Windows.Forms.FolderBrowserDialog; "
-            "$d.Description = 'Choose Media Collection Folder'; "
+            f"$d.Description = {json.dumps(title)}; "
             f"$d.SelectedPath = {json.dumps(initial)}; "
             "$d.ShowNewFolderButton = $true; "
             "if ($d.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK) "
@@ -60,9 +79,7 @@ def choose_folder(initial_dir: Path | None = None):
                 check=False,
             )
             selected = result.stdout.strip()
-            if selected:
-                return Path(selected).expanduser().resolve()
-            return None
+            return Path(selected).expanduser().resolve() if selected else None
         except (OSError, subprocess.SubprocessError):
             return None
 
@@ -73,14 +90,14 @@ def choose_folder(initial_dir: Path | None = None):
         root = tk.Tk()
         root.withdraw()
         root.attributes("-topmost", True)
-        selected = filedialog.askdirectory(initialdir=initial)
+        selected = filedialog.askdirectory(initialdir=initial, title=title)
         root.destroy()
         return Path(selected).expanduser().resolve() if selected else None
     except Exception:
         return None
 
 
-MEDIA_ROOT = load_saved_media_root()
+MEDIA_ROOT, VISUAL_ROOT, AUDIO_ROOT = load_config()
 
 
 def empty_deck():
@@ -97,23 +114,17 @@ def empty_deck():
 
 
 VISUAL_STATE = {
-    "decks": {
-        "a": empty_deck(),
-        "b": empty_deck(),
-    },
+    "decks": {"a": empty_deck(), "b": empty_deck()},
     "crossfader": 0.0,
     "blackout": False,
     "audio_reactive": True,
     "reactivity": 0.55,
-    # Video master controls (both visual decks after compositing)
     "master_opacity": 1.0,
     "master_brightness": 1.0,
     "master_contrast": 1.0,
     "master_saturation": 1.0,
     "master_hue": 0.0,
     "master_blur": 0.0,
-    # Shared performance macros. These are intentionally generic so they can
-    # be mapped to MIDI CC later and routed to both DJ and VJ engines.
     "common_intensity": 0.0,
     "common_filter": 0.0,
     "common_pulse": 0.0,
@@ -180,10 +191,23 @@ def library():
     return jsonify(scan_media_library(MEDIA_ROOT))
 
 
+@app.get("/api/library/visual")
+def visual_library():
+    return jsonify(scan_media_library(VISUAL_ROOT, source="visual"))
+
+
+@app.get("/api/library/audio")
+def audio_library():
+    return jsonify(scan_media_library(AUDIO_ROOT, source="audio"))
+
+
 @app.get("/api/config")
 def config():
     return jsonify({
         "media_root": str(MEDIA_ROOT),
+        "visual_root": str(VISUAL_ROOT),
+        "audio_root": str(AUDIO_ROOT),
+        "app_data_root": str(APP_DATA_ROOT),
         "exists": MEDIA_ROOT.exists(),
         "saved": CONFIG_FILE.exists(),
     })
@@ -191,47 +215,52 @@ def config():
 
 @app.post("/api/select-media-root")
 def select_media_root():
-    global MEDIA_ROOT
+    global MEDIA_ROOT, VISUAL_ROOT, AUDIO_ROOT
 
-    selected = choose_folder(MEDIA_ROOT if MEDIA_ROOT.exists() else Path.home())
+    selected = choose_folder(MEDIA_ROOT, "Choose Media Collection Folder")
     if not selected:
         return jsonify({"cancelled": True, "media_root": str(MEDIA_ROOT)})
 
-    if not selected.exists() or not selected.is_dir():
-        return jsonify({"error": "Selected path is not a folder"}), 400
-
     MEDIA_ROOT = selected
-    try:
-        save_media_root(MEDIA_ROOT)
-    except OSError as error:
-        return jsonify({"error": f"Folder selected but could not save config: {error}"}), 500
+    VISUAL_ROOT = MEDIA_ROOT / "video"
+    AUDIO_ROOT = MEDIA_ROOT / "audio"
+    VISUAL_ROOT.mkdir(parents=True, exist_ok=True)
+    AUDIO_ROOT.mkdir(parents=True, exist_ok=True)
+    save_config()
 
-    scanned = scan_media_library(MEDIA_ROOT)
     return jsonify({
         "cancelled": False,
         "media_root": str(MEDIA_ROOT),
-        "exists": True,
-        "total_files": scanned.get("total_files", 0),
-        "folders": len(scanned.get("folders", [])),
+        "visual_root": str(VISUAL_ROOT),
+        "audio_root": str(AUDIO_ROOT),
     })
 
 
-@app.post("/api/media-root")
-def set_media_root():
-    global MEDIA_ROOT
+@app.post("/api/select-library-root/<kind>")
+def select_library_root(kind):
+    global VISUAL_ROOT, AUDIO_ROOT
+    if kind not in {"visual", "audio"}:
+        return jsonify({"error": "Unknown library type"}), 400
 
-    payload = request.get_json(silent=True) or {}
-    raw_path = payload.get("path")
-    if not raw_path:
-        return jsonify({"error": "Missing path"}), 400
+    current = VISUAL_ROOT if kind == "visual" else AUDIO_ROOT
+    selected = choose_folder(current, f"Choose {kind.title()} Library Folder")
+    if not selected:
+        return jsonify({"cancelled": True, "kind": kind, "path": str(current)})
 
-    candidate = Path(raw_path).expanduser().resolve()
-    if not candidate.exists() or not candidate.is_dir():
-        return jsonify({"error": "Path is not an existing folder"}), 400
+    if kind == "visual":
+        VISUAL_ROOT = selected
+    else:
+        AUDIO_ROOT = selected
+    save_config()
 
-    MEDIA_ROOT = candidate
-    save_media_root(MEDIA_ROOT)
-    return jsonify({"media_root": str(MEDIA_ROOT), "exists": True})
+    scanned = scan_media_library(selected, source=kind)
+    return jsonify({
+        "cancelled": False,
+        "kind": kind,
+        "path": str(selected),
+        "total_files": scanned.get("total_files", 0),
+        "folders": len(scanned.get("folders", [])),
+    })
 
 
 @app.get("/api/state")
@@ -265,14 +294,18 @@ def update_audio_state():
 @app.get("/media")
 def media_file():
     relative_path = request.args.get("path", "")
-    target = resolve_media_path(MEDIA_ROOT, relative_path)
+    source = request.args.get("source")
+    root = AUDIO_ROOT if source == "audio" else VISUAL_ROOT if source == "visual" else MEDIA_ROOT
+    target = resolve_media_path(root, relative_path)
     if not target or not target.is_file():
         return jsonify({"error": "Media not found"}), 404
     return send_file(target, conditional=True)
 
 
 if __name__ == "__main__":
-    print(f"MEDIA ROOT: {MEDIA_ROOT}")
+    print(f"MEDIA COLLECTION: {MEDIA_ROOT}")
+    print(f"VISUAL LIBRARY:   {VISUAL_ROOT}")
+    print(f"AUDIO LIBRARY:    {AUDIO_ROOT}")
     print("CONSOLE: http://127.0.0.1:5000/console")
     print("REGIA:   http://127.0.0.1:5000/regia")
     print("OUTPUT:  http://127.0.0.1:5000/output")
