@@ -1,63 +1,8 @@
-const layers = {
-  a: {host:document.querySelector("#layer-a"),video:document.querySelector("#layer-a video"),image:document.querySelector("#layer-a img"),last:null,lastCutToken:null},
-  b: {host:document.querySelector("#layer-b"),video:document.querySelector("#layer-b video"),image:document.querySelector("#layer-b img"),last:null,lastCutToken:null},
-};
-const blackout = document.querySelector("#blackout-layer");
-const beatFlash = document.querySelector("#beat-flash");
-async function json(url){const r=await fetch(url,{cache:"no-store"});return r.json();}
-function loadLayer(layer,media){
-  if(!media){layer.video.style.display="none";layer.image.style.display="none";layer.last=null;return;}
-  if(layer.last===media.path)return;
-  if(media.kind==="video"){layer.image.style.display="none";layer.video.style.display="block";layer.video.src=media.url;layer.video.load();layer.video.play().catch(()=>{});}
-  else{layer.video.style.display="none";layer.image.style.display="block";layer.image.src=media.url;}
-  layer.last=media.path;layer.lastCutToken=null;
-}
-function applyRandomCut(layer,deck){
-  if(deck.media?.kind!=="video")return;
-  if(!deck.cut_token||deck.cut_token===layer.lastCutToken)return;
-  if(!Number.isFinite(layer.video.duration)||layer.video.duration<=0)return;
-  const ratio=Math.max(0,Math.min(.98,Number(deck.cut_position??Math.random())));
-  layer.video.currentTime=ratio*layer.video.duration;layer.lastCutToken=deck.cut_token;
-}
-function buildMasterFilter(visual,audio){
-  const intensity=Number(visual.common_intensity||0);
-  const sharedFilter=Number(visual.common_filter||0);
-  const brightness=Number(visual.master_brightness??1)*(1+intensity*.18);
-  const contrast=Number(visual.master_contrast??1)*(1+intensity*.35);
-  const saturationBase=Number(visual.master_saturation??1);
-  const saturation=saturationBase*(sharedFilter<0?1-Math.abs(sharedFilter)*.8:1+sharedFilter*1.2);
-  const hue=Number(visual.master_hue||0)+Math.max(0,sharedFilter)*80;
-  const blur=Number(visual.master_blur||0)+Math.max(0,-sharedFilter)*2.5;
-  const reactiveBrightness=visual.audio_reactive?(audio.high||0)*visual.reactivity*.45:0;
-  return `brightness(${Math.max(0,brightness+reactiveBrightness)}) contrast(${Math.max(0,contrast)}) saturate(${Math.max(0,saturation)}) hue-rotate(${hue}deg) blur(${Math.max(0,blur)}px)`;
-}
-function applyDeck(name,deck,opacity,audio,visual){
-  const layer=layers[name];loadLayer(layer,deck.media);applyRandomCut(layer,deck);
-  const target=deck.media?.kind==="video"?layer.video:layer.image;if(!target)return;
-  const reactive=visual.audio_reactive?visual.reactivity:0;
-  const commonPulse=Number(visual.common_pulse||0);
-  const beatPulse=audio.beat?commonPulse*.09:0;
-  const bassScale=1+(audio.bass||0)*reactive*.12+beatPulse;
-  const globalMaster=Number(visual.global_master??1);
-  layer.host.style.opacity=opacity*deck.opacity*Number(visual.master_opacity??1)*globalMaster;
-  target.style.transform=`scale(${deck.scale*bassScale})`;
-  target.style.filter=buildMasterFilter(visual,audio);
-  if(deck.media?.kind==="video"){
-    layer.video.playbackRate=deck.speed;
-    if(deck.playing&&layer.video.paused)layer.video.play().catch(()=>{});
-    if(!deck.playing&&!layer.video.paused)layer.video.pause();
-  }
-}
-async function tick(){
-  try{
-    const [visual,audio]=await Promise.all([json("/api/visual-state"),json("/api/audio-state")]);
-    const x=Math.max(0,Math.min(1,visual.crossfader));
-    applyDeck("a",visual.decks.a,Math.cos(x*Math.PI/2),audio,visual);
-    applyDeck("b",visual.decks.b,Math.sin(x*Math.PI/2),audio,visual);
-    blackout.classList.toggle("on",visual.blackout);
-    const reactiveFlash=visual.audio_reactive&&audio.beat?Math.min(.35,visual.reactivity*.35):0;
-    const macroStrobe=audio.beat?Number(visual.common_strobe||0)*.85:0;
-    beatFlash.style.opacity=Math.max(reactiveFlash,macroStrobe);
-  }catch(e){console.error(e);}
-}
-setInterval(tick,70);tick();
+const layers={a:{host:document.querySelector('#layer-a'),video:document.querySelector('#layer-a video'),image:document.querySelector('#layer-a img'),last:null,lastCutToken:null},b:{host:document.querySelector('#layer-b'),video:document.querySelector('#layer-b video'),image:document.querySelector('#layer-b img'),last:null,lastCutToken:null}};
+const blackout=document.querySelector('#blackout-layer'),beatFlash=document.querySelector('#beat-flash');
+async function json(url){const r=await fetch(url,{cache:'no-store'});return r.json()}
+function loadLayer(layer,media){if(!media){layer.video.style.display='none';layer.image.style.display='none';layer.last=null;return}if(layer.last===media.path)return;if(media.kind==='video'){layer.image.style.display='none';layer.video.style.display='block';layer.video.src=media.url;layer.video.load();layer.video.play().catch(()=>{})}else{layer.video.style.display='none';layer.image.style.display='block';layer.image.src=media.url}layer.last=media.path;layer.lastCutToken=null}
+function applyRandomCut(layer,deck){if(deck.media?.kind!=='video'||!deck.cut_token||deck.cut_token===layer.lastCutToken||!Number.isFinite(layer.video.duration)||layer.video.duration<=0)return;layer.video.currentTime=Math.max(0,Math.min(.98,Number(deck.cut_position??Math.random())))*layer.video.duration;layer.lastCutToken=deck.cut_token}
+function buildMasterFilter(v,a){const intensity=+v.common_intensity||0,shared=+v.common_filter||0;let brightness=(+v.master_brightness||1)*(1+intensity*.18),contrast=(+v.master_contrast||1)*(1+intensity*.35),sat=(+v.master_saturation||1)*(shared<0?1-Math.abs(shared)*.8:1+shared*1.2),hue=(+v.master_hue||0)+Math.max(0,shared)*80,blur=(+v.master_blur||0)+Math.max(0,-shared)*2.5;if(v.audio_reactive){brightness+=(a.high||0)*v.reactivity*.55}const invert=Math.max(0,Math.min(1,+v.fx_invert||0));return `brightness(${Math.max(0,brightness)}) contrast(${Math.max(0,contrast)}) saturate(${Math.max(0,sat)}) hue-rotate(${hue}deg) blur(${Math.max(0,blur)}px) invert(${invert})`}
+function applyDeck(name,deck,opacity,a,v){const layer=layers[name];loadLayer(layer,deck.media);applyRandomCut(layer,deck);const target=deck.media?.kind==='video'?layer.video:layer.image;if(!target)return;const reactive=v.audio_reactive?+v.reactivity||0:0,pulse=+v.common_pulse||0,beat=a.beat?1:0;const still=deck.media?.kind!=='video';let scale=+deck.scale||1;scale*=1+(a.bass||0)*reactive*(still?.22:.12)+beat*reactive*(still?.075:.035)+beat*pulse*.09;const glitch=(+v.fx_glitch||0)*reactive*(.25+(a.high||0));const rgb=+v.fx_rgb||0;if(glitch>0){const gx=(Math.random()-.5)*glitch*24,gy=(Math.random()-.5)*glitch*8;target.style.transform=`translate(${gx}px,${gy}px) scale(${scale}) skewX(${(Math.random()-.5)*glitch*3}deg)`}else target.style.transform=`scale(${scale})`;target.style.filter=buildMasterFilter(v,a);target.style.boxShadow=rgb>0?`${-rgb*10}px 0 0 rgba(255,0,0,${rgb*.45}), ${rgb*10}px 0 0 rgba(0,255,255,${rgb*.45})`:'none';layer.host.style.opacity=opacity*(+deck.opacity||0)*(+v.master_opacity??1)*(+v.global_master??1);if(deck.media?.kind==='video'){layer.video.playbackRate=deck.speed;if(deck.playing&&layer.video.paused)layer.video.play().catch(()=>{});if(!deck.playing&&!layer.video.paused)layer.video.pause()}}
+async function tick(){try{const[v,a]=await Promise.all([json('/api/visual-state'),json('/api/audio-state')]);const x=Math.max(0,Math.min(1,v.crossfader));applyDeck('a',v.decks.a,Math.cos(x*Math.PI/2),a,v);applyDeck('b',v.decks.b,Math.sin(x*Math.PI/2),a,v);blackout.classList.toggle('on',v.blackout);const reactive=v.audio_reactive&&a.beat?Math.min(.55,v.reactivity*.5):0,strobe=a.beat?(+v.common_strobe||0)*.85:0,stillFlash=a.beat&&v.audio_reactive?(+v.reactivity||0)*.28:0;beatFlash.style.opacity=Math.max(reactive,strobe,stillFlash)}catch(e){console.error(e)}}setInterval(tick,45);tick();
