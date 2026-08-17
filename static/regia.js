@@ -135,12 +135,12 @@ async function updateMeters() {
 
 async function init() {
   const config = await getJSON("/api/config");
-  library = await getJSON("/api/library");
+  library = await getJSON("/api/library/visual");
   state = await getJSON("/api/visual-state");
 
   const count = library.folders.flatMap(f => f.items).filter(x => visualKinds.has(x.kind)).length;
   document.querySelector("#library-status").textContent =
-    config.exists ? `${count} visual — ${config.media_root}` : `Cartella non trovata: ${config.media_root}`;
+    library.exists ? `${count} visual — ${config.visual_root}` : `Cartella non trovata: ${config.visual_root}`;
 
   renderLibrary();
   syncControls();
