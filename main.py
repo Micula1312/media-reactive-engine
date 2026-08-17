@@ -62,7 +62,19 @@ MEDIA_ROOT, VISUAL_ROOT, AUDIO_ROOT = load_config()
 if not CONFIG_FILE.exists() and LEGACY_CONFIG_FILE.exists(): save_config()
 
 def empty_deck():
-    return {"source_folder": None, "media": None, "playing": True, "opacity": 1.0, "scale": 1.0, "scale_reactive": False, "speed": 1.0, "cut_token": None, "cut_position": None}
+    return {
+        "source_folder": None,
+        "media": None,
+        "playing": True,
+        "opacity": 1.0,
+        "opacity_reactive": False,
+        "scale": 1.0,
+        "scale_reactive": False,
+        "speed": 1.0,
+        "speed_reactive": False,
+        "cut_token": None,
+        "cut_position": None,
+    }
 
 VISUAL_STATE = {"decks": {"a": empty_deck(), "b": empty_deck()}, "crossfader": 0.0, "blackout": False, "audio_reactive": True, "reactivity": 0.55, "master_opacity": 1.0, "master_brightness": 1.0, "master_contrast": 1.0, "master_saturation": 1.0, "master_hue": 0.0, "master_blur": 0.0, "global_master": 1.0, "common_intensity": 0.0, "common_filter": 0.0, "common_pulse": 0.0, "common_strobe": 0.0, "fx_glitch": 0.0, "fx_rgb": 0.0, "fx_invert": 0.0, "text_enabled": False, "text_content": "", "text_size": 64.0, "text_opacity": 1.0}
 AUDIO_STATE = {"level": 0.0, "bass": 0.0, "mid": 0.0, "high": 0.0, "beat": False, "beat_count": 0, "crossfader": 0.0, "deck_a": None, "deck_b": None}
