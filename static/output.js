@@ -57,6 +57,20 @@ function applyRandomCut(layer, deck) {
   layer.lastCutToken = deck.cut_token;
 }
 
+function buildMasterFilter(visual, audio) {
+  const intensity = Number(visual.common_intensity || 0);
+  const sharedFilter = Number(visual.common_filter || 0);
+  const brightness = Number(visual.master_brightness ?? 1) * (1 + intensity * 0.18);
+  const contrast = Number(visual.master_contrast ?? 1) * (1 + intensity * 0.35);
+  const saturationBase = Number(visual.master_saturation ?? 1);
+  const saturation = saturationBase * (sharedFilter < 0 ? 1 - Math.abs(sharedFilter) * 0.8 : 1 + sharedFilter * 1.2);
+  const hue = Number(visual.master_hue || 0) + Math.max(0, sharedFilter) * 80;
+  const blur = Number(visual.master_blur || 0) + Math.max(0, -sharedFilter) * 2.5;
+  const reactiveBrightness = visual.audio_reactive ? (audio.high || 0) * visual.reactivity * 0.45 : 0;
+
+  return `brightness(${Math.max(0, brightness + reactiveBrightness)}) contrast(${Math.max(0, contrast)}) saturate(${Math.max(0, saturation)}) hue-rotate(${hue}deg) blur(${Math.max(0, blur)}px)`;
+}
+
 function applyDeck(name, deck, opacity, audio, visual) {
   const layer = layers[name];
   loadLayer(layer, deck.media);
@@ -66,12 +80,13 @@ function applyDeck(name, deck, opacity, audio, visual) {
   if (!target) return;
 
   const reactive = visual.audio_reactive ? visual.reactivity : 0;
-  const bassScale = 1 + (audio.bass || 0) * reactive * 0.12;
-  const highBrightness = 1 + (audio.high || 0) * reactive * 0.45;
+  const commonPulse = Number(visual.common_pulse || 0);
+  const beatPulse = audio.beat ? commonPulse * 0.09 : 0;
+  const bassScale = 1 + (audio.bass || 0) * reactive * 0.12 + beatPulse;
 
-  layer.host.style.opacity = opacity * deck.opacity;
+  layer.host.style.opacity = opacity * deck.opacity * Number(visual.master_opacity ?? 1);
   target.style.transform = `scale(${deck.scale * bassScale})`;
-  target.style.filter = `brightness(${highBrightness})`;
+  target.style.filter = buildMasterFilter(visual, audio);
 
   if (deck.media?.kind === "video") {
     layer.video.playbackRate = deck.speed;
@@ -95,9 +110,12 @@ async function tick() {
     applyDeck("b", visual.decks.b, opacityB, audio, visual);
 
     blackout.classList.toggle("on", visual.blackout);
-    beatFlash.style.opacity = visual.audio_reactive && audio.beat
+
+    const reactiveFlash = visual.audio_reactive && audio.beat
       ? Math.min(.35, visual.reactivity * .35)
       : 0;
+    const macroStrobe = audio.beat ? Number(visual.common_strobe || 0) * .85 : 0;
+    beatFlash.style.opacity = Math.max(reactiveFlash, macroStrobe);
   } catch (e) {
     console.error(e);
   }
