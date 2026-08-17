@@ -15,18 +15,14 @@
 
   <main class="performance-console">
     <section class="library-column visual-library">
-      <button id="choose-visual-root" class="column-head library-root-button" title="Choose visual library folder">
-        <span>VISUAL FOLDERS</span><span id="visual-root-label">CHANGE ↗</span>
-      </button>
-      <div class="frame-crop visual-library-crop"><iframe id="vj-library-frame" src="/regia" title="Visual media library"></iframe></div>
+      <button id="choose-visual-root" class="column-head library-root-button" title="Choose video library folder"><span>VIDEO FOLDERS</span><span id="visual-root-label">CHANGE ↗</span></button>
+      <div class="frame-crop visual-library-crop"><iframe id="vj-library-frame" src="/regia" title="Video media library"></iframe></div>
     </section>
 
     <section class="machine-column video-machine"><div class="machine-head"><strong>VIDEO</strong><span>DECK A / DECK B</span></div><iframe id="vj-frame" src="/regia" title="Video mixer"></iframe></section>
 
     <section class="library-column audio-library">
-      <button id="choose-audio-root" class="column-head library-root-button" title="Choose audio library folder">
-        <span>AUDIO FOLDERS</span><span id="audio-root-label">CHANGE ↗</span>
-      </button>
+      <button id="choose-audio-root" class="column-head library-root-button" title="Choose audio library folder"><span>AUDIO FOLDERS</span><span id="audio-root-label">CHANGE ↗</span></button>
       <div class="frame-crop audio-library-crop"><iframe id="dj-library-frame" src="/dj" title="Audio media library"></iframe></div>
     </section>
 
@@ -35,9 +31,11 @@
     <footer class="master-console">
       <section class="master-block video-master">
         <div class="master-title">VIDEO MASTER</div>
+        <div class="footer-ab-mixer">
+          <span>A</span><input id="footer-video-crossfader" data-midi-param="video.crossfader" type="range" min="0" max="1" step=".001" value="0"><span>B</span>
+        </div>
         <div class="preview-shell"><iframe id="output-frame" src="/output" title="Live output"></iframe></div>
         <div class="video-master-controls">
-          <label>OPACITY <input id="video-master-opacity" data-midi-param="video.opacity" type="range" min="0" max="1" step=".01" value="1"></label>
           <label>BRIGHTNESS <input id="video-master-brightness" data-midi-param="video.brightness" type="range" min=".2" max="2" step=".01" value="1"></label>
           <label>CONTRAST <input id="video-master-contrast" data-midi-param="video.contrast" type="range" min=".2" max="2.5" step=".01" value="1"></label>
           <label>SATURATION <input id="video-master-saturation" data-midi-param="video.saturation" type="range" min="0" max="3" step=".01" value="1"></label>
@@ -45,6 +43,7 @@
           <label>BLUR <input id="video-master-blur" data-midi-param="video.blur" type="range" min="0" max="18" step=".1" value="0"></label>
           <a class="master-action" href="/output" target="_blank">FULLSCREEN ↗</a>
         </div>
+        <label class="final-master-fader">VIDEO MASTER <input id="video-master-opacity" data-midi-param="video.master" type="range" min="0" max="1" step=".01" value="1"></label>
       </section>
 
       <section class="master-block global-master">
@@ -56,18 +55,22 @@
           <label>STROBE <input id="common-strobe" data-midi-param="common.strobe" type="range" min="0" max="1" step=".01" value="0"></label>
         </div>
         <div class="master-readout"><span>SHARED AUDIO + VIDEO CONTROL BUS</span><strong>READY FOR MIDI CC MAPPING</strong></div>
+        <label class="final-master-fader general-final">GENERAL MASTER <input id="general-master-volume" data-midi-param="common.master" type="range" min="0" max="1" step=".01" value="1"></label>
       </section>
 
       <section class="master-block audio-master">
         <div class="master-title">AUDIO MASTER</div>
+        <div class="footer-ab-mixer">
+          <span>A</span><input id="footer-audio-crossfader" data-midi-param="audio.crossfader" type="range" min="0" max="1" step=".001" value=".5"><span>B</span>
+        </div>
         <div class="audio-master-grid">
-          <label>MASTER <input id="console-master-volume" data-midi-param="audio.master" type="range" min="0" max="1.2" step=".01" value="1"></label>
           <button id="mic-toggle">MIC OFF</button>
           <label>MIC GAIN <input id="mic-gain" data-midi-param="audio.mic_gain" type="range" min="0" max="2" step=".01" value="1"></label>
           <label class="toggle-line"><input id="mic-monitor" type="checkbox"> MONITOR MIC</label>
           <button id="record-toggle" class="record-button">REC</button>
           <span id="record-status">READY</span>
         </div>
+        <label class="final-master-fader">AUDIO MASTER <input id="console-master-volume" data-midi-param="audio.master" type="range" min="0" max="1.2" step=".01" value="1"></label>
       </section>
     </footer>
   </main>
