@@ -47,11 +47,11 @@ def choose_folder(initial_dir=None, title="Choose Media Folder"):
 
 MEDIA_ROOT,VISUAL_ROOT,AUDIO_ROOT=load_config()
 def empty_deck(): return {"source_folder":None,"media":None,"playing":True,"opacity":1.0,"scale":1.0,"speed":1.0,"cut_token":None,"cut_position":None}
-VISUAL_STATE={"decks":{"a":empty_deck(),"b":empty_deck()},"crossfader":0.0,"blackout":False,"audio_reactive":True,"reactivity":0.55,"master_opacity":1.0,"master_brightness":1.0,"master_contrast":1.0,"master_saturation":1.0,"master_hue":0.0,"master_blur":0.0,"global_master":1.0,"common_intensity":0.0,"common_filter":0.0,"common_pulse":0.0,"common_strobe":0.0,"fx_glitch":0.0,"fx_rgb":0.0,"fx_invert":0.0}
+VISUAL_STATE={"decks":{"a":empty_deck(),"b":empty_deck()},"crossfader":0.0,"blackout":False,"audio_reactive":True,"reactivity":0.55,"master_opacity":1.0,"master_brightness":1.0,"master_contrast":1.0,"master_saturation":1.0,"master_hue":0.0,"master_blur":0.0,"global_master":1.0,"common_intensity":0.0,"common_filter":0.0,"common_pulse":0.0,"common_strobe":0.0,"fx_glitch":0.0,"fx_rgb":0.0,"fx_invert":0.0,"text_enabled":False,"text_content":"","text_size":64.0,"text_opacity":1.0}
 AUDIO_STATE={"level":0.0,"bass":0.0,"mid":0.0,"high":0.0,"beat":False,"beat_count":0,"crossfader":0.0,"deck_a":None,"deck_b":None}
 
 def merge_visual_state(payload):
-    keys=("crossfader","blackout","audio_reactive","reactivity","master_opacity","master_brightness","master_contrast","master_saturation","master_hue","master_blur","global_master","common_intensity","common_filter","common_pulse","common_strobe","fx_glitch","fx_rgb","fx_invert")
+    keys=("crossfader","blackout","audio_reactive","reactivity","master_opacity","master_brightness","master_contrast","master_saturation","master_hue","master_blur","global_master","common_intensity","common_filter","common_pulse","common_strobe","fx_glitch","fx_rgb","fx_invert","text_enabled","text_content","text_size","text_opacity")
     for key in keys:
         if key in payload: VISUAL_STATE[key]=payload[key]
     decks=payload.get("decks")
