@@ -1,12 +1,199 @@
-let library=null;let state=null;let pendingItem=null;const visualKinds=new Set(["video","image","svg"]);
-async function getJSON(url){const r=await fetch(url,{cache:"no-store"});if(!r.ok)throw new Error(`${r.status} ${r.statusText}`);return r.json()}
-async function patchState(patch){const r=await fetch("/api/visual-state",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(patch)});state=await r.json();syncControls()}
-function deckPatch(deck,patch){return patchState({decks:{[deck]:patch}})}
-function preview(deck,item){const el=document.querySelector(`#preview-${deck}`);el.innerHTML="";if(!item)return;if(item.kind==="video"){const v=document.createElement("video");Object.assign(v,{src:item.url,autoplay:true,muted:true,loop:true});el.append(v)}else{const img=document.createElement("img");img.src=item.url;el.append(img)}}
-async function loadToDeck(deck,item,folder){await deckPatch(deck,{source_folder:folder,media:item,playing:true});preview(deck,item);document.querySelector(`#now-${deck}`).textContent=item.path;document.querySelector(`#deck-${deck}-folder`).textContent=folder}
-function renderLibrary(){const host=document.querySelector("#folders");host.innerHTML="";const folders=library.folders.map(folder=>({...folder,items:folder.items.filter(x=>visualKinds.has(x.kind))})).filter(folder=>folder.items.length);for(const folder of folders){const section=document.createElement("section");section.className="folder";const head=document.createElement("button");head.className="folder-head";head.innerHTML=`<span>${folder.name}</span><span>${folder.items.length}</span>`;const list=document.createElement("div");list.className="media-list";head.onclick=()=>list.classList.toggle("open");for(const item of folder.items){const b=document.createElement("button");b.className="media-item";b.textContent=item.name;b.onclick=()=>{pendingItem={item,folder:folder.name};document.querySelector("#deck-picker").classList.remove("hidden")};list.append(b)}section.append(head,list);host.append(section)}}
-function itemsForFolder(name){const folder=library?.folders?.find(f=>f.name===name);return folder?folder.items.filter(i=>visualKinds.has(i.kind)):[]}
-function allVisualItems(){return library.folders.flatMap(folder=>folder.items.filter(i=>visualKinds.has(i.kind)).map(item=>({item,folder:folder.name})))}
-function bindDeck(deck){for(const[id,key]of[[`opacity-${deck}`,"opacity"],[`scale-${deck}`,"scale"],[`speed-${deck}`,"speed"]])document.querySelector(`#${id}`).oninput=e=>deckPatch(deck,{[key]:Number(e.target.value)});document.querySelector(`#play-${deck}`).onclick=()=>deckPatch(deck,{playing:!state.decks[deck].playing});document.querySelector(`#random-${deck}`).onclick=()=>{const currentFolder=state?.decks?.[deck]?.source_folder;const local=itemsForFolder(currentFolder);if(local.length){const item=local[Math.floor(Math.random()*local.length)];loadToDeck(deck,item,currentFolder);return}const items=allVisualItems();if(!items.length)return;const choice=items[Math.floor(Math.random()*items.length)];loadToDeck(deck,choice.item,choice.folder)}}
-function syncControls(){if(!state)return;for(const deck of["a","b"]){const d=state.decks[deck];document.querySelector(`#opacity-${deck}`).value=d.opacity;document.querySelector(`#scale-${deck}`).value=d.scale;document.querySelector(`#speed-${deck}`).value=d.speed;document.querySelector(`#play-${deck}`).textContent=d.playing?"PAUSE":"PLAY";if(d.media){document.querySelector(`#now-${deck}`).textContent=d.media.path;document.querySelector(`#deck-${deck}-folder`).textContent=d.source_folder||"—"}}document.querySelector("#crossfader").value=state.crossfader}
-async function init(){const config=await getJSON("/api/config");library=await getJSON("/api/library/visual");state=await getJSON("/api/visual-state");const count=library.folders.flatMap(f=>f.items).filter(x=>visualKinds.has(x.kind)).length;document.querySelector("#library-status").textContent=library.exists?`${count} visual — ${config.visual_root}`:`Cartella non trovata: ${config.visual_root}`;renderLibrary();syncControls();for(const deck of["a","b"]){bindDeck(deck);if(state.decks[deck].media)preview(deck,state.decks[deck].media)}document.querySelector("#crossfader").oninput=e=>patchState({crossfader:Number(e.target.value)});document.querySelectorAll("#deck-picker button").forEach(button=>{button.onclick=()=>{const target=button.dataset.target;document.querySelector("#deck-picker").classList.add("hidden");if(pendingItem&&(target==="a"||target==="b"))loadToDeck(target,pendingItem.item,pendingItem.folder);pendingItem=null}})}init().catch(console.error);
+let library = null;
+let state = null;
+let pendingItem = null;
+let outputPopup = null;
+let popupWatch = null;
+
+const visualKinds = new Set(["video", "image", "svg"]);
+
+async function getJSON(url) {
+  const r = await fetch(url, {cache: "no-store"});
+  if (!r.ok) throw new Error(`${r.status} ${r.statusText}`);
+  return r.json();
+}
+
+async function patchState(patch) {
+  const r = await fetch("/api/visual-state", {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify(patch),
+  });
+  state = await r.json();
+  syncControls();
+}
+
+function deckPatch(deck, patch) {
+  return patchState({decks: {[deck]: patch}});
+}
+
+function preview(deck, item) {
+  const el = document.querySelector(`#preview-${deck}`);
+  el.innerHTML = "";
+  if (!item) return;
+  if (item.kind === "video") {
+    const v = document.createElement("video");
+    Object.assign(v, {src: item.url, autoplay: true, muted: true, loop: true});
+    el.append(v);
+  } else {
+    const img = document.createElement("img");
+    img.src = item.url;
+    el.append(img);
+  }
+}
+
+async function loadToDeck(deck, item, folder) {
+  await deckPatch(deck, {source_folder: folder, media: item, playing: true});
+  preview(deck, item);
+  document.querySelector(`#now-${deck}`).textContent = item.path;
+  document.querySelector(`#deck-${deck}-folder`).textContent = folder;
+}
+
+function renderLibrary() {
+  const host = document.querySelector("#folders");
+  host.innerHTML = "";
+  const folders = library.folders
+    .map(folder => ({...folder, items: folder.items.filter(x => visualKinds.has(x.kind))}))
+    .filter(folder => folder.items.length);
+  for (const folder of folders) {
+    const section = document.createElement("section");
+    section.className = "folder";
+    const head = document.createElement("button");
+    head.className = "folder-head";
+    head.innerHTML = `<span>${folder.name}</span><span>${folder.items.length}</span>`;
+    const list = document.createElement("div");
+    list.className = "media-list";
+    head.onclick = () => list.classList.toggle("open");
+    for (const item of folder.items) {
+      const b = document.createElement("button");
+      b.className = "media-item";
+      b.textContent = item.name;
+      b.onclick = () => {
+        pendingItem = {item, folder: folder.name};
+        document.querySelector("#deck-picker").classList.remove("hidden");
+      };
+      list.append(b);
+    }
+    section.append(head, list);
+    host.append(section);
+  }
+}
+
+function visualItemsForDeckFolder(deck) {
+  const folderName = state?.decks?.[deck]?.source_folder;
+  const folder = library?.folders?.find(f => f.name === folderName);
+  if (!folder) return [];
+  return folder.items.filter(i => visualKinds.has(i.kind));
+}
+
+function allVisualItems() {
+  return library.folders.flatMap(folder =>
+    folder.items.filter(i => visualKinds.has(i.kind)).map(item => ({item, folder: folder.name}))
+  );
+}
+
+function bindDeck(deck) {
+  for (const [id, key] of [[`opacity-${deck}`, "opacity"], [`scale-${deck}`, "scale"], [`speed-${deck}`, "speed"]]) {
+    document.querySelector(`#${id}`).oninput = e => deckPatch(deck, {[key]: Number(e.target.value)});
+  }
+  document.querySelector(`#play-${deck}`).onclick = () => deckPatch(deck, {playing: !state.decks[deck].playing});
+  document.querySelector(`#random-${deck}`).onclick = () => {
+    const sameFolderItems = visualItemsForDeckFolder(deck);
+    if (sameFolderItems.length) {
+      const currentPath = state?.decks?.[deck]?.media?.path;
+      const candidates = sameFolderItems.length > 1 ? sameFolderItems.filter(x => x.path !== currentPath) : sameFolderItems;
+      const item = candidates[Math.floor(Math.random() * candidates.length)];
+      loadToDeck(deck, item, state.decks[deck].source_folder);
+      return;
+    }
+    const items = allVisualItems();
+    if (!items.length) return;
+    const choice = items[Math.floor(Math.random() * items.length)];
+    loadToDeck(deck, choice.item, choice.folder);
+  };
+}
+
+function syncControls() {
+  if (!state) return;
+  for (const deck of ["a", "b"]) {
+    const d = state.decks[deck];
+    document.querySelector(`#opacity-${deck}`).value = d.opacity;
+    document.querySelector(`#scale-${deck}`).value = d.scale;
+    document.querySelector(`#speed-${deck}`).value = d.speed;
+    document.querySelector(`#play-${deck}`).textContent = d.playing ? "PAUSE" : "PLAY";
+    if (d.media) {
+      document.querySelector(`#now-${deck}`).textContent = d.media.path;
+      document.querySelector(`#deck-${deck}-folder`).textContent = d.source_folder || "—";
+    }
+  }
+  const cross = document.querySelector("#crossfader");
+  if (cross) cross.value = state.crossfader;
+  const reactive = document.querySelector("#audio-reactive");
+  if (reactive) reactive.checked = !!state.audio_reactive;
+  const amount = document.querySelector("#reactivity");
+  if (amount) amount.value = state.reactivity;
+  const textToggle = document.querySelector("#text-toggle");
+  if (textToggle) {
+    textToggle.textContent = state.text_enabled ? "TEXT ON" : "TEXT OFF";
+    textToggle.classList.toggle("active", !!state.text_enabled);
+  }
+  const textContent = document.querySelector("#text-content");
+  if (textContent && document.activeElement !== textContent) textContent.value = state.text_content || "";
+  const textSize = document.querySelector("#text-size");
+  if (textSize) textSize.value = state.text_size ?? 64;
+  const textOpacity = document.querySelector("#text-opacity");
+  if (textOpacity) textOpacity.value = state.text_opacity ?? 1;
+}
+
+function attachOutputPreview() {
+  const panel = document.querySelector("#output-preview-panel");
+  const button = document.querySelector("#detach-output");
+  panel?.classList.remove("detached");
+  if (button) button.textContent = "DETACH ↗";
+  if (outputPopup && !outputPopup.closed) outputPopup.close();
+  outputPopup = null;
+  clearInterval(popupWatch);
+}
+
+function detachOutputPreview() {
+  const panel = document.querySelector("#output-preview-panel");
+  const button = document.querySelector("#detach-output");
+  outputPopup = window.open("/output", "magic-mic-output", "popup=yes,width=960,height=540,resizable=yes,scrollbars=no");
+  if (!outputPopup) return;
+  panel?.classList.add("detached");
+  if (button) button.textContent = "ATTACH";
+  clearInterval(popupWatch);
+  popupWatch = setInterval(() => {
+    if (!outputPopup || outputPopup.closed) attachOutputPreview();
+  }, 400);
+}
+
+async function init() {
+  const config = await getJSON("/api/config");
+  library = await getJSON("/api/library/visual");
+  state = await getJSON("/api/visual-state");
+  const count = library.folders.flatMap(f => f.items).filter(x => visualKinds.has(x.kind)).length;
+  document.querySelector("#library-status").textContent = library.exists ? `${count} video — ${config.visual_root}` : `Cartella non trovata: ${config.visual_root}`;
+  renderLibrary();
+  syncControls();
+  for (const deck of ["a", "b"]) {
+    bindDeck(deck);
+    if (state.decks[deck].media) preview(deck, state.decks[deck].media);
+  }
+  document.querySelector("#crossfader").oninput = e => patchState({crossfader: Number(e.target.value)});
+  document.querySelector("#reactivity").oninput = e => patchState({reactivity: Number(e.target.value)});
+  document.querySelector("#audio-reactive").onchange = e => patchState({audio_reactive: e.target.checked});
+  document.querySelector("#text-toggle").onclick = () => patchState({text_enabled: !state.text_enabled});
+  document.querySelector("#text-content").oninput = e => patchState({text_content: e.target.value});
+  document.querySelector("#text-size").oninput = e => patchState({text_size: Number(e.target.value)});
+  document.querySelector("#text-opacity").oninput = e => patchState({text_opacity: Number(e.target.value)});
+  document.querySelector("#detach-output").onclick = () => outputPopup && !outputPopup.closed ? attachOutputPreview() : detachOutputPreview();
+  document.querySelectorAll("#deck-picker button").forEach(button => {
+    button.onclick = () => {
+      const target = button.dataset.target;
+      document.querySelector("#deck-picker").classList.add("hidden");
+      if (pendingItem && (target === "a" || target === "b")) loadToDeck(target, pendingItem.item, pendingItem.folder);
+      pendingItem = null;
+    };
+  });
+}
+init().catch(console.error);
