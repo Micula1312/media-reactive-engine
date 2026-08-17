@@ -3,6 +3,7 @@ __pycache__/
 .venv/
 venv/
 .env
+.media-reactive-config.json
 media/
 mediateca/
 MEDIATECA/
