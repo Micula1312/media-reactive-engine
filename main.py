@@ -105,6 +105,19 @@ VISUAL_STATE = {
     "blackout": False,
     "audio_reactive": True,
     "reactivity": 0.55,
+    # Video master controls (both visual decks after compositing)
+    "master_opacity": 1.0,
+    "master_brightness": 1.0,
+    "master_contrast": 1.0,
+    "master_saturation": 1.0,
+    "master_hue": 0.0,
+    "master_blur": 0.0,
+    # Shared performance macros. These are intentionally generic so they can
+    # be mapped to MIDI CC later and routed to both DJ and VJ engines.
+    "common_intensity": 0.0,
+    "common_filter": 0.0,
+    "common_pulse": 0.0,
+    "common_strobe": 0.0,
 }
 
 AUDIO_STATE = {
@@ -121,7 +134,13 @@ AUDIO_STATE = {
 
 
 def merge_visual_state(payload):
-    for key in ("crossfader", "blackout", "audio_reactive", "reactivity"):
+    top_level_keys = (
+        "crossfader", "blackout", "audio_reactive", "reactivity",
+        "master_opacity", "master_brightness", "master_contrast",
+        "master_saturation", "master_hue", "master_blur",
+        "common_intensity", "common_filter", "common_pulse", "common_strobe",
+    )
+    for key in top_level_keys:
         if key in payload:
             VISUAL_STATE[key] = payload[key]
 
@@ -258,8 +277,6 @@ if __name__ == "__main__":
     print("REGIA:   http://127.0.0.1:5000/regia")
     print("OUTPUT:  http://127.0.0.1:5000/output")
     print("DJ:      http://127.0.0.1:5000/dj")
-    # Keep the reloader, but disable Werkzeug's interactive debugger because
-    # Werkzeug reserves /console for its own debug console.
     app.run(
         host="127.0.0.1",
         port=5000,
