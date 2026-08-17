@@ -10,6 +10,7 @@
   let chunks = [];
 
   let masterVolumeBase = 1;
+  let globalMaster = 1;
   let commonIntensity = 0;
   let commonFilter = 0;
   let commonPulse = 0;
@@ -20,7 +21,7 @@
   }
 
   function effectiveMasterGain() {
-    return masterVolumeBase * (1 + commonIntensity * 0.18);
+    return masterVolumeBase * globalMaster * (1 + commonIntensity * 0.18);
   }
 
   function applyMasterGain(immediate = true) {
@@ -33,11 +34,9 @@
   function applyCommonFilter(value) {
     ensureAudioGraph();
     commonFilter = Math.max(-1, Math.min(1, Number(value) || 0));
-
     for (const deck of ['a', 'b']) {
       const nodes = deckNodes[deck];
       if (!nodes) continue;
-
       if (commonFilter < 0) {
         const t = Math.abs(commonFilter);
         nodes.low.frequency.setTargetAtTime(20000 * Math.pow(180 / 20000, t), audioContext.currentTime, 0.025);
@@ -90,29 +89,32 @@
     post('mic-status', {enabled: false});
   }
 
-  function setMicGain(value) {
-    if (micGain) micGain.gain.value = Number(value);
-  }
-
+  function setMicGain(value) { if (micGain) micGain.gain.value = Number(value); }
   function setMonitor(enabled) {
     if (micMonitorGain) micMonitorGain.gain.value = enabled ? 1 : 0;
     post('mic-monitor-status', {enabled});
   }
-
   function setMasterVolume(value) {
     masterVolumeBase = Number(value);
     applyMasterGain();
     const slider = document.querySelector('#master-volume');
     if (slider) slider.value = Number(value);
   }
-
+  function setGlobalMaster(value) {
+    globalMaster = Math.max(0, Math.min(1, Number(value) || 0));
+    applyMasterGain(false);
+  }
   function setCommonIntensity(value) {
     commonIntensity = Math.max(0, Math.min(1, Number(value) || 0));
     applyMasterGain(false);
   }
-
-  function setCommonPulse(value) {
-    commonPulse = Math.max(0, Math.min(1, Number(value) || 0));
+  function setCommonPulse(value) { commonPulse = Math.max(0, Math.min(1, Number(value) || 0)); }
+  function setCrossfader(value) {
+    const slider = document.querySelector('#dj-crossfader');
+    if (!slider) return;
+    slider.value = Math.max(0, Math.min(1, Number(value)));
+    if (typeof applyCrossfader === 'function') applyCrossfader();
+    post('audio-crossfader', {value: Number(slider.value)});
   }
 
   function startRecording() {
@@ -138,13 +140,8 @@
     recorder.start(250);
     post('record-status', {recording: true});
   }
+  function stopRecording() { if (recorder?.state === 'recording') recorder.stop(); }
 
-  function stopRecording() {
-    if (recorder?.state === 'recording') recorder.stop();
-  }
-
-  // Pulse the audio master on detected beats. This uses the same beat detector
-  // already driving the VJ side, so one MIDI macro can affect both engines.
   setInterval(() => {
     if (!audioContext || commonPulse <= 0) return;
     const beatOn = document.querySelector('#dj-beat')?.textContent === '●';
@@ -153,8 +150,8 @@
     lastPulseAt = now;
     const base = effectiveMasterGain();
     masterGain.gain.cancelScheduledValues(audioContext.currentTime);
-    masterGain.gain.setValueAtTime(base * (1 + commonPulse * 0.22), audioContext.currentTime);
-    masterGain.gain.exponentialRampToValueAtTime(Math.max(0.001, base), audioContext.currentTime + 0.11);
+    masterGain.gain.setValueAtTime(Math.max(.001, base * (1 + commonPulse * .22)), audioContext.currentTime);
+    masterGain.gain.exponentialRampToValueAtTime(Math.max(.001, base), audioContext.currentTime + .11);
   }, 30);
 
   window.addEventListener('message', async event => {
@@ -166,6 +163,8 @@
         case 'mic-gain': setMicGain(data.value); break;
         case 'mic-monitor': setMonitor(Boolean(data.enabled)); break;
         case 'master-volume': setMasterVolume(data.value); break;
+        case 'global-master': setGlobalMaster(data.value); break;
+        case 'crossfader': setCrossfader(data.value); break;
         case 'common-intensity': setCommonIntensity(data.value); break;
         case 'common-filter': applyCommonFilter(data.value); break;
         case 'common-pulse': setCommonPulse(data.value); break;
