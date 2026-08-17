@@ -6,7 +6,7 @@ from media_library import scan_media_library, resolve_media_path
 
 app = Flask(__name__)
 
-DEFAULT_MEDIA_ROOT = Path.home() / "Desktop" / "MEDIATECA"
+DEFAULT_MEDIA_ROOT = Path.home() / "Desktop" / "media-collection" / "mediateca"
 MEDIA_ROOT = Path(
     os.environ.get("MEDIA_REACTIVE_ROOT", DEFAULT_MEDIA_ROOT)
 ).expanduser().resolve()
