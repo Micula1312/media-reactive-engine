@@ -1,5 +1,9 @@
 const mediaRootEl = document.querySelector('#media-root');
 const chooseFolderButton = document.querySelector('#choose-folder');
+const chooseVisualRootButton = document.querySelector('#choose-visual-root');
+const chooseAudioRootButton = document.querySelector('#choose-audio-root');
+const visualRootLabel = document.querySelector('#visual-root-label');
+const audioRootLabel = document.querySelector('#audio-root-label');
 const reloadButton = document.querySelector('#reload-all');
 const statusEl = document.querySelector('#folder-status');
 const djFrame = document.querySelector('#dj-frame');
@@ -20,12 +24,22 @@ function showStatus(message, timeout = 2600) {
   showStatus.timer = window.setTimeout(() => statusEl.classList.add('hidden'), timeout);
 }
 
+function shortPath(path) {
+  if (!path) return 'CHANGE ↗';
+  const chunks = path.replace(/\\/g, '/').split('/').filter(Boolean);
+  return `${chunks.at(-1) || path} ↗`;
+}
+
 async function loadConfig() {
   const response = await fetch('/api/config', {cache: 'no-store'});
   const config = await response.json();
   mediaRootEl.textContent = config.media_root;
   mediaRootEl.title = config.media_root;
-  if (!config.exists) showStatus('Media folder not found — choose another folder.', 5000);
+  visualRootLabel.textContent = shortPath(config.visual_root);
+  visualRootLabel.title = config.visual_root;
+  audioRootLabel.textContent = shortPath(config.audio_root);
+  audioRootLabel.title = config.audio_root;
+  if (!config.exists) showStatus('Media Collection not found.', 5000);
   return config;
 }
 
@@ -66,6 +80,8 @@ function prepareEmbeddedFrame(frame) {
       const isVj = frame.id.startsWith('vj');
 
       let css = `
+        html, body, * { scrollbar-width:none !important; }
+        ::-webkit-scrollbar { width:0 !important; height:0 !important; display:none !important; }
         .topbar { display:none !important; }
         body { min-height:100vh !important; overflow:auto !important; }
         .visual-console, .dj-console { min-height:100vh !important; }
@@ -120,6 +136,35 @@ function bindRange(id, key, {audioMessage = null} = {}) {
   });
 }
 
+async function selectLibrary(kind, button) {
+  button.disabled = true;
+  showStatus(`Choose ${kind} folder…`, 120000);
+  try {
+    const response = await fetch(`/api/select-library-root/${kind}`, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: '{}',
+    });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error || 'Folder selection failed');
+    if (data.cancelled) {
+      showStatus('Folder selection cancelled.');
+      return;
+    }
+    showStatus(`${kind.toUpperCase()} library: ${data.total_files ?? 0} media files.`);
+    await loadConfig();
+    reloadFrames();
+  } catch (error) {
+    console.error(error);
+    showStatus(`ERROR: ${error.message}`, 6000);
+  } finally {
+    button.disabled = false;
+  }
+}
+
+chooseVisualRootButton?.addEventListener('click', () => selectLibrary('visual', chooseVisualRootButton));
+chooseAudioRootButton?.addEventListener('click', () => selectLibrary('audio', chooseAudioRootButton));
+
 const masterVolume = document.querySelector('#console-master-volume');
 const micToggle = document.querySelector('#mic-toggle');
 const micGain = document.querySelector('#mic-gain');
@@ -143,16 +188,12 @@ recordToggle?.addEventListener('click', () => {
   postToDj(recording ? 'record-start' : 'record-stop');
 });
 
-// VIDEO MASTER — final compositing controls.
 bindRange('video-master-opacity', 'master_opacity');
 bindRange('video-master-brightness', 'master_brightness');
 bindRange('video-master-contrast', 'master_contrast');
 bindRange('video-master-saturation', 'master_saturation');
 bindRange('video-master-hue', 'master_hue');
 bindRange('video-master-blur', 'master_blur');
-
-// SHARED MACROS — deliberately generic and tagged with data-midi-param in the
-// HTML so the next MIDI layer can bind CC values without changing the UI.
 bindRange('common-intensity', 'common_intensity', {audioMessage: 'common-intensity'});
 bindRange('common-filter', 'common_filter', {audioMessage: 'common-filter'});
 bindRange('common-pulse', 'common_pulse', {audioMessage: 'common-pulse'});
@@ -176,8 +217,6 @@ async function hydrateMasterControls() {
     const el = document.querySelector(`#${id}`);
     if (el && state[key] != null) el.value = state[key];
   }
-
-  // Re-apply shared audio macros after the DJ iframe has had a chance to boot.
   setTimeout(() => {
     postToDj('common-intensity', {value: Number(state.common_intensity || 0)});
     postToDj('common-filter', {value: Number(state.common_filter || 0)});
@@ -205,22 +244,21 @@ window.addEventListener('message', event => {
 chooseFolderButton.addEventListener('click', async () => {
   chooseFolderButton.disabled = true;
   chooseFolderButton.textContent = 'SELECTING…';
-  showStatus('Choose any media folder on this computer…', 120000);
+  showStatus('Choose a Media Collection folder. VIDEO and AUDIO subfolders will be created automatically.', 120000);
   try {
     const response = await fetch('/api/select-media-root', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: '{}'});
     const data = await response.json();
     if (!response.ok) throw new Error(data.error || 'Folder selection failed');
     if (data.cancelled) { showStatus('Folder selection cancelled.'); return; }
-    mediaRootEl.textContent = data.media_root;
-    mediaRootEl.title = data.media_root;
-    showStatus(`Loaded ${data.total_files ?? 0} media files from ${data.folders ?? 0} folders.`);
+    await loadConfig();
+    showStatus('Media Collection changed. video/ and audio/ are ready.');
     reloadFrames();
   } catch (error) {
     console.error(error);
     showStatus(`ERROR: ${error.message}`, 6000);
   } finally {
     chooseFolderButton.disabled = false;
-    chooseFolderButton.textContent = 'CHOOSE FOLDER';
+    chooseFolderButton.textContent = 'CHOOSE COLLECTION';
   }
 });
 
@@ -228,7 +266,7 @@ reloadButton.addEventListener('click', () => {
   reloadFrames();
   loadConfig().catch(console.error);
   hydrateMasterControls().catch(console.error);
-  showStatus('Media library rescanned.');
+  showStatus('Media libraries rescanned.');
 });
 
 Promise.all([loadConfig(), hydrateMasterControls()]).catch(error => {
