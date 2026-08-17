@@ -22,9 +22,7 @@ DEFAULT_VISUAL_ROOT = DEFAULT_COLLECTION_ROOT / "video"
 DEFAULT_AUDIO_ROOT = DEFAULT_COLLECTION_ROOT / "audio"
 
 def ensure_app_folders():
-    APP_DATA_ROOT.mkdir(parents=True, exist_ok=True)
-    DEFAULT_VISUAL_ROOT.mkdir(parents=True, exist_ok=True)
-    DEFAULT_AUDIO_ROOT.mkdir(parents=True, exist_ok=True)
+    APP_DATA_ROOT.mkdir(parents=True, exist_ok=True); DEFAULT_VISUAL_ROOT.mkdir(parents=True, exist_ok=True); DEFAULT_AUDIO_ROOT.mkdir(parents=True, exist_ok=True)
 
 def load_config():
     ensure_app_folders(); data = {}
@@ -62,34 +60,30 @@ MEDIA_ROOT, VISUAL_ROOT, AUDIO_ROOT = load_config()
 if not CONFIG_FILE.exists() and LEGACY_CONFIG_FILE.exists(): save_config()
 
 def empty_deck():
-    return {
-        "source_folder": None,
-        "media": None,
-        "playing": True,
-        "opacity": 1.0,
-        "opacity_reactive": False,
-        "scale": 1.0,
-        "scale_reactive": False,
-        "speed": 1.0,
-        "speed_reactive": False,
-        "cut_token": None,
-        "cut_position": None,
-    }
+    return {"source_folder":None,"media":None,"playing":True,"opacity":1.0,"opacity_reactive":False,"scale":1.0,"scale_reactive":False,"speed":1.0,"speed_reactive":False,"cut_token":None,"cut_position":None}
 
-VISUAL_STATE = {"decks": {"a": empty_deck(), "b": empty_deck()}, "crossfader": 0.0, "blackout": False, "audio_reactive": True, "reactivity": 0.55, "master_opacity": 1.0, "master_brightness": 1.0, "master_contrast": 1.0, "master_saturation": 1.0, "master_hue": 0.0, "master_blur": 0.0, "global_master": 1.0, "common_intensity": 0.0, "common_filter": 0.0, "common_pulse": 0.0, "common_strobe": 0.0, "fx_glitch": 0.0, "fx_rgb": 0.0, "fx_invert": 0.0, "text_enabled": False, "text_content": "", "text_size": 64.0, "text_opacity": 1.0}
-AUDIO_STATE = {"level": 0.0, "bass": 0.0, "mid": 0.0, "high": 0.0, "beat": False, "beat_count": 0, "crossfader": 0.0, "deck_a": None, "deck_b": None}
+VISUAL_STATE = {
+    "decks":{"a":empty_deck(),"b":empty_deck()},"crossfader":0.0,"blackout":False,"audio_reactive":True,"reactivity":0.55,
+    "master_opacity":1.0,"master_brightness":1.0,"master_contrast":1.0,"master_saturation":1.0,"master_hue":0.0,"master_blur":0.0,
+    "master_brightness_reactive":False,"master_brightness_amount":0.0,"master_contrast_reactive":False,"master_contrast_amount":0.0,
+    "master_blur_reactive":False,"master_blur_amount":0.0,"fx_glitch":0.0,"fx_glitch_reactive":False,"fx_glitch_amount":0.0,
+    "fx_rgb":0.0,"fx_rgb_reactive":False,"fx_rgb_amount":0.0,"fx_invert":0.0,"fx_invert_reactive":False,"fx_invert_amount":0.0,
+    "global_master":1.0,"common_intensity":0.0,"common_filter":0.0,"common_pulse":0.0,"common_strobe":0.0,
+    "text_enabled":False,"text_content":"","text_size":64.0,"text_opacity":1.0
+}
+AUDIO_STATE={"level":0.0,"bass":0.0,"mid":0.0,"high":0.0,"beat":False,"beat_count":0,"crossfader":0.0,"deck_a":None,"deck_b":None}
 
 def merge_visual_state(payload):
-    keys = ("crossfader", "blackout", "audio_reactive", "reactivity", "master_opacity", "master_brightness", "master_contrast", "master_saturation", "master_hue", "master_blur", "global_master", "common_intensity", "common_filter", "common_pulse", "common_strobe", "fx_glitch", "fx_rgb", "fx_invert", "text_enabled", "text_content", "text_size", "text_opacity")
+    keys=tuple(k for k in VISUAL_STATE.keys() if k != "decks")
     for key in keys:
-        if key in payload: VISUAL_STATE[key] = payload[key]
-    decks = payload.get("decks")
-    if isinstance(decks, dict):
-        for name in ("a", "b"):
-            patch = decks.get(name)
-            if isinstance(patch, dict):
+        if key in payload: VISUAL_STATE[key]=payload[key]
+    decks=payload.get("decks")
+    if isinstance(decks,dict):
+        for name in ("a","b"):
+            patch=decks.get(name)
+            if isinstance(patch,dict):
                 for key in empty_deck():
-                    if key in patch: VISUAL_STATE["decks"][name][key] = patch[key]
+                    if key in patch: VISUAL_STATE["decks"][name][key]=patch[key]
 
 @app.get("/")
 @app.get("/console")
@@ -101,53 +95,49 @@ def output(): return render_template("output.html")
 @app.get("/dj")
 def dj(): return render_template("dj.html")
 @app.get("/api/library")
-def library(): return jsonify(scan_media_library(AUDIO_ROOT, source="audio"))
+def library(): return jsonify(scan_media_library(AUDIO_ROOT,source="audio"))
 @app.get("/api/library/visual")
-def visual_library(): return jsonify(scan_media_library(VISUAL_ROOT, source="visual"))
+def visual_library(): return jsonify(scan_media_library(VISUAL_ROOT,source="visual"))
 @app.get("/api/library/audio")
-def audio_library(): return jsonify(scan_media_library(AUDIO_ROOT, source="audio"))
+def audio_library(): return jsonify(scan_media_library(AUDIO_ROOT,source="audio"))
 @app.get("/api/config")
-def config(): return jsonify({"app_name": APP_NAME, "media_root": str(MEDIA_ROOT), "visual_root": str(VISUAL_ROOT), "audio_root": str(AUDIO_ROOT), "app_data_root": str(APP_DATA_ROOT), "exists": MEDIA_ROOT.exists(), "saved": CONFIG_FILE.exists()})
+def config(): return jsonify({"app_name":APP_NAME,"media_root":str(MEDIA_ROOT),"visual_root":str(VISUAL_ROOT),"audio_root":str(AUDIO_ROOT),"app_data_root":str(APP_DATA_ROOT),"exists":MEDIA_ROOT.exists(),"saved":CONFIG_FILE.exists()})
 @app.post("/api/select-media-root")
 def select_media_root():
-    global MEDIA_ROOT, VISUAL_ROOT, AUDIO_ROOT
-    selected = choose_folder(MEDIA_ROOT, "Choose Media Collection Folder")
-    if not selected: return jsonify({"cancelled": True, "media_root": str(MEDIA_ROOT)})
-    MEDIA_ROOT = selected; VISUAL_ROOT = MEDIA_ROOT / "video"; AUDIO_ROOT = MEDIA_ROOT / "audio"
-    VISUAL_ROOT.mkdir(parents=True, exist_ok=True); AUDIO_ROOT.mkdir(parents=True, exist_ok=True); save_config()
-    return jsonify({"cancelled": False, "media_root": str(MEDIA_ROOT), "visual_root": str(VISUAL_ROOT), "audio_root": str(AUDIO_ROOT)})
+    global MEDIA_ROOT,VISUAL_ROOT,AUDIO_ROOT
+    selected=choose_folder(MEDIA_ROOT,"Choose Media Collection Folder")
+    if not selected:return jsonify({"cancelled":True,"media_root":str(MEDIA_ROOT)})
+    MEDIA_ROOT=selected;VISUAL_ROOT=MEDIA_ROOT/"video";AUDIO_ROOT=MEDIA_ROOT/"audio";VISUAL_ROOT.mkdir(parents=True,exist_ok=True);AUDIO_ROOT.mkdir(parents=True,exist_ok=True);save_config()
+    return jsonify({"cancelled":False,"media_root":str(MEDIA_ROOT),"visual_root":str(VISUAL_ROOT),"audio_root":str(AUDIO_ROOT)})
 @app.post("/api/select-library-root/<kind>")
 def select_library_root(kind):
-    global VISUAL_ROOT, AUDIO_ROOT
-    if kind not in {"visual", "audio"}: return jsonify({"error": "Unknown library type"}), 400
-    current = VISUAL_ROOT if kind == "visual" else AUDIO_ROOT; selected = choose_folder(current, f"Choose {kind.title()} Library Folder")
-    if not selected: return jsonify({"cancelled": True, "kind": kind, "path": str(current)})
-    if kind == "visual": VISUAL_ROOT = selected
-    else: AUDIO_ROOT = selected
-    save_config(); scanned = scan_media_library(selected, source=kind)
-    return jsonify({"cancelled": False, "kind": kind, "path": str(selected), "total_files": scanned.get("total_files", 0), "folders": len(scanned.get("folders", []))})
+    global VISUAL_ROOT,AUDIO_ROOT
+    if kind not in {"visual","audio"}:return jsonify({"error":"Unknown library type"}),400
+    current=VISUAL_ROOT if kind=="visual" else AUDIO_ROOT;selected=choose_folder(current,f"Choose {kind.title()} Library Folder")
+    if not selected:return jsonify({"cancelled":True,"kind":kind,"path":str(current)})
+    if kind=="visual":VISUAL_ROOT=selected
+    else:AUDIO_ROOT=selected
+    save_config();scanned=scan_media_library(selected,source=kind);return jsonify({"cancelled":False,"kind":kind,"path":str(selected),"total_files":scanned.get("total_files",0),"folders":len(scanned.get("folders",[]))})
 @app.get("/api/state")
 @app.get("/api/visual-state")
-def get_visual_state(): return jsonify(VISUAL_STATE)
+def get_visual_state():return jsonify(VISUAL_STATE)
 @app.post("/api/state")
 @app.post("/api/visual-state")
-def update_visual_state(): merge_visual_state(request.get_json(silent=True) or {}); return jsonify(VISUAL_STATE)
+def update_visual_state():merge_visual_state(request.get_json(silent=True) or {});return jsonify(VISUAL_STATE)
 @app.get("/api/audio-state")
-def get_audio_state(): return jsonify(AUDIO_STATE)
+def get_audio_state():return jsonify(AUDIO_STATE)
 @app.post("/api/audio-state")
 def update_audio_state():
-    payload = request.get_json(silent=True) or {}
+    payload=request.get_json(silent=True) or {}
     for key in AUDIO_STATE:
-        if key in payload: AUDIO_STATE[key] = payload[key]
+        if key in payload:AUDIO_STATE[key]=payload[key]
     return jsonify(AUDIO_STATE)
 @app.get("/media")
 def media_file():
-    relative_path = request.args.get("path", ""); source = request.args.get("source")
-    root = AUDIO_ROOT if source == "audio" else VISUAL_ROOT if source == "visual" else MEDIA_ROOT
-    target = resolve_media_path(root, relative_path)
-    if not target or not target.is_file(): return jsonify({"error": "Media not found"}), 404
-    return send_file(target, conditional=True)
+    relative_path=request.args.get("path","");source=request.args.get("source");root=AUDIO_ROOT if source=="audio" else VISUAL_ROOT if source=="visual" else MEDIA_ROOT;target=resolve_media_path(root,relative_path)
+    if not target or not target.is_file():return jsonify({"error":"Media not found"}),404
+    return send_file(target,conditional=True)
 
-if __name__ == "__main__":
-    print("magic-mic"); print(f"MEDIA COLLECTION: {MEDIA_ROOT}"); print(f"VIDEO LIBRARY:    {VISUAL_ROOT}"); print(f"AUDIO LIBRARY:    {AUDIO_ROOT}"); print("CONSOLE: http://127.0.0.1:5000/console")
-    app.run(host="127.0.0.1", port=5000, debug=True, use_debugger=False, use_reloader=True)
+if __name__=="__main__":
+    print("magic-mic");print(f"MEDIA COLLECTION: {MEDIA_ROOT}");print(f"VIDEO LIBRARY:    {VISUAL_ROOT}");print(f"AUDIO LIBRARY:    {AUDIO_ROOT}");print("CONSOLE: http://127.0.0.1:5000/console")
+    app.run(host="127.0.0.1",port=5000,debug=True,use_debugger=False,use_reloader=True)
