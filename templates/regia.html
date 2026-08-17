@@ -21,14 +21,20 @@
     </aside>
 
     <section class="visual-mixer">
-      <section class="output-preview-panel">
-        <div class="output-preview-head">
-          <div><span class="panel-title">LIVE OUTPUT</span><span class="muted"> / preview compositing finale</span></div>
-          <a class="output-preview-open" href="/output" target="_blank">OPEN FULLSCREEN ↗</a>
+      <section class="master-strip">
+        <label class="crossfader"><span>A</span><input id="crossfader" type="range" min="0" max="1" step=".001" value="0"><span>B</span></label>
+        <div class="audio-reactive-block">
+          <label><input id="audio-reactive" type="checkbox" checked> AUDIO REACTIVE</label>
+          <label>AMOUNT <input id="reactivity" type="range" min="0" max="1" step=".01" value=".55"></label>
+          <div class="meters">
+            <div><span>LEVEL</span><i id="meter-level"></i></div>
+            <div><span>BASS</span><i id="meter-bass"></i></div>
+            <div><span>MID</span><i id="meter-mid"></i></div>
+            <div><span>HIGH</span><i id="meter-high"></i></div>
+          </div>
+          <div class="visual-beat-clock">BEAT COUNT <strong id="visual-beat-count">0</strong></div>
         </div>
-        <div class="output-preview-frame">
-          <iframe src="/output" title="Live output preview" loading="eager"></iframe>
-        </div>
+        <button id="blackout" class="blackout-button">BLACKOUT</button>
       </section>
 
       <div class="decks-grid">
@@ -40,21 +46,11 @@
             <label>SCALE <input id="scale-a" type="range" min=".5" max="2.5" step=".01" value="1"></label>
             <label>SPEED <input id="speed-a" type="range" min=".2" max="3" step=".05" value="1"></label>
           </div>
-          <div class="button-row">
-            <button id="play-a">PAUSE</button><button id="random-a">RANDOM A</button>
-          </div>
+          <div class="button-row"><button id="play-a">PAUSE</button><button id="random-a">RANDOM A</button></div>
           <div class="beat-switch-panel">
             <label class="beat-switch-toggle"><input id="beat-switch-a" type="checkbox"> BEAT SWITCH</label>
-            <label>EVERY
-              <select id="beat-every-a">
-                <option value="1">1 beat</option><option value="2">2 beats</option><option value="4" selected>4 beats</option><option value="8">8 beats</option><option value="16">16 beats</option>
-              </select>
-            </label>
-            <label>MODE
-              <select id="beat-mode-a">
-                <option value="next">NEXT</option><option value="random" selected>RANDOM CLIP</option><option value="cut">RANDOM CUT</option>
-              </select>
-            </label>
+            <label>EVERY <select id="beat-every-a"><option value="1">1 beat</option><option value="2">2 beats</option><option value="4" selected>4 beats</option><option value="8">8 beats</option><option value="16">16 beats</option></select></label>
+            <label>MODE <select id="beat-mode-a"><option value="next">NEXT</option><option value="random" selected>RANDOM CLIP</option><option value="cut">RANDOM CUT</option></select></label>
             <label>SOURCE <select id="beat-folder-a"></select></label>
           </div>
           <div class="now-playing"><span class="muted">A</span><strong id="now-a">—</strong></div>
@@ -68,56 +64,28 @@
             <label>SCALE <input id="scale-b" type="range" min=".5" max="2.5" step=".01" value="1"></label>
             <label>SPEED <input id="speed-b" type="range" min=".2" max="3" step=".05" value="1"></label>
           </div>
-          <div class="button-row">
-            <button id="play-b">PAUSE</button><button id="random-b">RANDOM B</button>
-          </div>
+          <div class="button-row"><button id="play-b">PAUSE</button><button id="random-b">RANDOM B</button></div>
           <div class="beat-switch-panel">
             <label class="beat-switch-toggle"><input id="beat-switch-b" type="checkbox"> BEAT SWITCH</label>
-            <label>EVERY
-              <select id="beat-every-b">
-                <option value="1">1 beat</option><option value="2">2 beats</option><option value="4" selected>4 beats</option><option value="8">8 beats</option><option value="16">16 beats</option>
-              </select>
-            </label>
-            <label>MODE
-              <select id="beat-mode-b">
-                <option value="next">NEXT</option><option value="random" selected>RANDOM CLIP</option><option value="cut">RANDOM CUT</option>
-              </select>
-            </label>
+            <label>EVERY <select id="beat-every-b"><option value="1">1 beat</option><option value="2">2 beats</option><option value="4" selected>4 beats</option><option value="8">8 beats</option><option value="16">16 beats</option></select></label>
+            <label>MODE <select id="beat-mode-b"><option value="next">NEXT</option><option value="random" selected>RANDOM CLIP</option><option value="cut">RANDOM CUT</option></select></label>
             <label>SOURCE <select id="beat-folder-b"></select></label>
           </div>
           <div class="now-playing"><span class="muted">B</span><strong id="now-b">—</strong></div>
         </article>
       </div>
 
-      <section class="master-strip">
-        <label class="crossfader"><span>A</span><input id="crossfader" type="range" min="0" max="1" step=".001" value="0"><span>B</span></label>
-
-        <div class="audio-reactive-block">
-          <label><input id="audio-reactive" type="checkbox" checked> AUDIO REACTIVE</label>
-          <label>AMOUNT <input id="reactivity" type="range" min="0" max="1" step=".01" value=".55"></label>
-          <div class="meters">
-            <div><span>LEVEL</span><i id="meter-level"></i></div>
-            <div><span>BASS</span><i id="meter-bass"></i></div>
-            <div><span>MID</span><i id="meter-mid"></i></div>
-            <div><span>HIGH</span><i id="meter-high"></i></div>
-          </div>
-          <div class="visual-beat-clock">BEAT COUNT <strong id="visual-beat-count">0</strong></div>
+      <section class="output-preview-panel">
+        <div class="output-preview-head">
+          <div><span class="panel-title">LIVE OUTPUT</span><span class="muted"> / preview compositing finale</span></div>
+          <a class="output-preview-open" href="/output" target="_blank">OPEN FULLSCREEN ↗</a>
         </div>
-
-        <button id="blackout" class="blackout-button">BLACKOUT</button>
+        <div class="output-preview-frame"><iframe src="/output" title="Live output preview" loading="eager"></iframe></div>
       </section>
     </section>
   </main>
 
-  <div id="deck-picker" class="deck-picker hidden">
-    <span>LOAD TO</span>
-    <button data-target="a">A</button>
-    <button data-target="b">B</button>
-    <button data-target="cancel">×</button>
-  </div>
-
-  <script src="/static/regia.js"></script>
-  <script src="/static/dragdrop.js"></script>
-  <script src="/static/beatswitch.js"></script>
+  <div id="deck-picker" class="deck-picker hidden"><span>LOAD TO</span><button data-target="a">A</button><button data-target="b">B</button><button data-target="cancel">×</button></div>
+  <script src="/static/regia.js"></script><script src="/static/dragdrop.js"></script><script src="/static/beatswitch.js"></script>
 </body>
 </html>
