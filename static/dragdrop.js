@@ -5,11 +5,11 @@
 
   let library = null;
   const itemMap = new Map();
-
   const keyFor = (folder, name) => `${folder}::${name}`;
 
   async function loadLibrary() {
-    const response = await fetch("/api/library", {cache: "no-store"});
+    const endpoint = isDj ? "/api/library/audio" : "/api/library/visual";
+    const response = await fetch(endpoint, {cache: "no-store"});
     library = await response.json();
     itemMap.clear();
     for (const folder of library.folders || []) {
@@ -45,9 +45,7 @@
           button.style.opacity = ".45";
         });
 
-        button.addEventListener("dragend", () => {
-          button.style.opacity = "";
-        });
+        button.addEventListener("dragend", () => { button.style.opacity = ""; });
       });
     });
   }
@@ -71,28 +69,14 @@
       if (deckEl.dataset.dropReady === "1") return;
       deckEl.dataset.dropReady = "1";
 
-      deckEl.addEventListener("dragenter", event => {
-        event.preventDefault();
-        setDropState(deckEl, true);
-      });
-
-      deckEl.addEventListener("dragover", event => {
-        event.preventDefault();
-        event.dataTransfer.dropEffect = "copy";
-        setDropState(deckEl, true);
-      });
-
-      deckEl.addEventListener("dragleave", event => {
-        if (!deckEl.contains(event.relatedTarget)) setDropState(deckEl, false);
-      });
-
+      deckEl.addEventListener("dragenter", event => { event.preventDefault(); setDropState(deckEl, true); });
+      deckEl.addEventListener("dragover", event => { event.preventDefault(); event.dataTransfer.dropEffect = "copy"; setDropState(deckEl, true); });
+      deckEl.addEventListener("dragleave", event => { if (!deckEl.contains(event.relatedTarget)) setDropState(deckEl, false); });
       deckEl.addEventListener("drop", event => {
         event.preventDefault();
         setDropState(deckEl, false);
-
         const raw = event.dataTransfer.getData("application/x-media-reactive") || event.dataTransfer.getData("text/plain");
         if (!raw) return;
-
         let payload;
         try { payload = JSON.parse(raw); } catch { return; }
         const deck = deckNameFromElement(deckEl);
@@ -101,7 +85,6 @@
         if (isDj && payload.item.kind === "audio" && typeof window.loadTrack === "function") {
           window.loadTrack(deck, payload.item);
         }
-
         if (isVisual && ["video", "image", "svg"].includes(payload.item.kind) && typeof window.loadToDeck === "function") {
           window.loadToDeck(deck, payload.item, payload.folder);
         }
@@ -114,11 +97,7 @@
       await loadLibrary();
       decorateLibraryItems();
       bindDeckTargets();
-
-      const observer = new MutationObserver(() => {
-        decorateLibraryItems();
-        bindDeckTargets();
-      });
+      const observer = new MutationObserver(() => { decorateLibraryItems(); bindDeckTargets(); });
       observer.observe(document.body, {childList: true, subtree: true});
     } catch (error) {
       console.error("Drag/drop init failed", error);
