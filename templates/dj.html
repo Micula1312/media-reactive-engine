@@ -24,96 +24,33 @@
         <article class="dj-deck deck-a">
           <div class="deck-title">DECK A</div>
           <div class="track-display">
-            <div class="track-mainline">
-              <strong id="dj-title-a">NO TRACK</strong>
-              <div class="bpm-display"><b id="dj-bpm-a">—</b><span>BPM</span></div>
-            </div>
+            <div class="track-mainline"><strong id="dj-title-a">NO TRACK</strong><div class="bpm-display"><b id="dj-bpm-a">—</b><span>BPM</span></div></div>
             <div class="track-meta"><span id="dj-time-a">00:00 / 00:00</span><span id="dj-pitch-a">±0.0%</span></div>
           </div>
           <div class="waveform-wrap"><canvas id="waveform-a" class="waveform" width="900" height="150"></canvas><i id="waveform-playhead-a"></i></div>
           <input id="seek-a" class="seek" type="range" min="0" max="1" step=".001" value="0">
-          <div class="transport">
-            <button id="dj-play-a" class="play-button">PLAY</button>
-            <button id="dj-restart-a">↺</button>
-            <button id="dj-cue-a">CUE</button>
-            <button id="dj-cue-go-a" hidden>CUE GO</button>
-            <button id="dj-sync-a">SYNC → B</button>
-          </div>
-          <div class="hotcue-strip" data-deck="a">
-            <span>HOT CUE</span>
-            <button class="hotcue-button" data-deck="a" data-hotcue="1">1</button>
-            <button class="hotcue-button" data-deck="a" data-hotcue="2">2</button>
-            <button class="hotcue-button" data-deck="a" data-hotcue="3">3</button>
-            <button class="hotcue-button" data-deck="a" data-hotcue="4">4</button>
-          </div>
-          <div class="loop-strip">
-            <span>LOOP</span>
-            <button data-deck="a" data-beats="0.5">1/2</button>
-            <button data-deck="a" data-beats="1">1</button>
-            <button data-deck="a" data-beats="2">2</button>
-            <button data-deck="a" data-beats="4">4</button>
-            <button data-deck="a" data-beats="8">8</button>
-            <button id="loop-off-a">OFF</button>
-          </div>
-          <div class="dj-controls">
-            <label>VOLUME <input id="dj-volume-a" type="range" min="0" max="1.2" step=".01" value="1"></label>
-            <label>SPEED / PITCH <input id="dj-speed-a" type="range" min=".5" max="1.5" step=".001" value="1"></label>
-            <label>FILTER <input id="dj-filter-a" type="range" min="-1" max="1" step=".01" value="0"></label>
-          </div>
+          <div class="transport"><button id="dj-play-a" class="play-button">PLAY</button><button id="dj-restart-a">↺</button><button id="dj-cue-a">CUE</button><button id="dj-cue-go-a" hidden>CUE GO</button><button id="dj-sync-a">SYNC → B</button></div>
+          <div class="hotcue-strip" data-deck="a"><span>HOT CUE</span><button class="hotcue-button" data-deck="a" data-hotcue="1">1</button><button class="hotcue-button" data-deck="a" data-hotcue="2">2</button><button class="hotcue-button" data-deck="a" data-hotcue="3">3</button><button class="hotcue-button" data-deck="a" data-hotcue="4">4</button></div>
+          <div class="loop-strip"><span>LOOP</span><button data-deck="a" data-beats="0.5">1/2</button><button data-deck="a" data-beats="1">1</button><button data-deck="a" data-beats="2">2</button><button data-deck="a" data-beats="4">4</button><button data-deck="a" data-beats="8">8</button><button id="loop-off-a">OFF</button></div>
+          <div class="dj-controls"><label>VOLUME <input id="dj-volume-a" type="range" min="0" max="1.2" step=".01" value="1"></label><label>SPEED / PITCH <input id="dj-speed-a" type="range" min=".5" max="1.5" step=".001" value="1"></label><label>FILTER <input id="dj-filter-a" type="range" min="-1" max="1" step=".01" value="0"></label></div>
         </article>
 
         <section class="dj-master">
           <div class="panel-title">MASTER</div>
           <div class="master-meter"><i id="master-meter"></i></div>
-          <div class="fft-readout">
-            <div><span>LEVEL</span><b id="dj-level">0.00</b></div>
-            <div><span>BASS</span><b id="dj-bass">0.00</b></div>
-            <div><span>MID</span><b id="dj-mid">0.00</b></div>
-            <div><span>HIGH</span><b id="dj-high">0.00</b></div>
-            <div><span>BEAT</span><b id="dj-beat">—</b></div>
-          </div>
+          <div class="fft-readout"><div><span>LEVEL</span><b id="dj-level">0.00</b></div><div><span>BASS</span><b id="dj-bass">0.00</b></div><div><span>MID</span><b id="dj-mid">0.00</b></div><div><span>HIGH</span><b id="dj-high">0.00</b></div><div><span>BEAT</span><b id="dj-beat">—</b></div></div>
           <label class="vertical-ish">MASTER <input id="master-volume" type="range" min="0" max="1.2" step=".01" value="1"></label>
         </section>
 
         <article class="dj-deck deck-b">
           <div class="deck-title">DECK B</div>
-          <div class="track-display">
-            <div class="track-mainline">
-              <strong id="dj-title-b">NO TRACK</strong>
-              <div class="bpm-display"><b id="dj-bpm-b">—</b><span>BPM</span></div>
-            </div>
-            <div class="track-meta"><span id="dj-time-b">00:00 / 00:00</span><span id="dj-pitch-b">±0.0%</span></div>
-          </div>
+          <div class="track-display"><div class="track-mainline"><strong id="dj-title-b">NO TRACK</strong><div class="bpm-display"><b id="dj-bpm-b">—</b><span>BPM</span></div></div><div class="track-meta"><span id="dj-time-b">00:00 / 00:00</span><span id="dj-pitch-b">±0.0%</span></div></div>
           <div class="waveform-wrap"><canvas id="waveform-b" class="waveform" width="900" height="150"></canvas><i id="waveform-playhead-b"></i></div>
           <input id="seek-b" class="seek" type="range" min="0" max="1" step=".001" value="0">
-          <div class="transport">
-            <button id="dj-play-b" class="play-button">PLAY</button>
-            <button id="dj-restart-b">↺</button>
-            <button id="dj-cue-b">CUE</button>
-            <button id="dj-cue-go-b" hidden>CUE GO</button>
-            <button id="dj-sync-b">SYNC → A</button>
-          </div>
-          <div class="hotcue-strip" data-deck="b">
-            <span>HOT CUE</span>
-            <button class="hotcue-button" data-deck="b" data-hotcue="1">1</button>
-            <button class="hotcue-button" data-deck="b" data-hotcue="2">2</button>
-            <button class="hotcue-button" data-deck="b" data-hotcue="3">3</button>
-            <button class="hotcue-button" data-deck="b" data-hotcue="4">4</button>
-          </div>
-          <div class="loop-strip">
-            <span>LOOP</span>
-            <button data-deck="b" data-beats="0.5">1/2</button>
-            <button data-deck="b" data-beats="1">1</button>
-            <button data-deck="b" data-beats="2">2</button>
-            <button data-deck="b" data-beats="4">4</button>
-            <button data-deck="b" data-beats="8">8</button>
-            <button id="loop-off-b">OFF</button>
-          </div>
-          <div class="dj-controls">
-            <label>VOLUME <input id="dj-volume-b" type="range" min="0" max="1.2" step=".01" value="1"></label>
-            <label>SPEED / PITCH <input id="dj-speed-b" type="range" min=".5" max="1.5" step=".001" value="1"></label>
-            <label>FILTER <input id="dj-filter-b" type="range" min="-1" max="1" step=".01" value="0"></label>
-          </div>
+          <div class="transport"><button id="dj-play-b" class="play-button">PLAY</button><button id="dj-restart-b">↺</button><button id="dj-cue-b">CUE</button><button id="dj-cue-go-b" hidden>CUE GO</button><button id="dj-sync-b">SYNC → A</button></div>
+          <div class="hotcue-strip" data-deck="b"><span>HOT CUE</span><button class="hotcue-button" data-deck="b" data-hotcue="1">1</button><button class="hotcue-button" data-deck="b" data-hotcue="2">2</button><button class="hotcue-button" data-deck="b" data-hotcue="3">3</button><button class="hotcue-button" data-deck="b" data-hotcue="4">4</button></div>
+          <div class="loop-strip"><span>LOOP</span><button data-deck="b" data-beats="0.5">1/2</button><button data-deck="b" data-beats="1">1</button><button data-deck="b" data-beats="2">2</button><button data-deck="b" data-beats="4">4</button><button data-deck="b" data-beats="8">8</button><button id="loop-off-b">OFF</button></div>
+          <div class="dj-controls"><label>VOLUME <input id="dj-volume-b" type="range" min="0" max="1.2" step=".01" value="1"></label><label>SPEED / PITCH <input id="dj-speed-b" type="range" min=".5" max="1.5" step=".001" value="1"></label><label>FILTER <input id="dj-filter-b" type="range" min="-1" max="1" step=".01" value="0"></label></div>
         </article>
       </div>
 
@@ -122,18 +59,9 @@
     </section>
   </main>
 
-  <div id="audio-picker" class="deck-picker hidden">
-    <span>LOAD TO</span>
-    <button data-target="a">A</button>
-    <button data-target="b">B</button>
-    <button data-target="cancel">×</button>
-  </div>
+  <div id="audio-picker" class="deck-picker hidden"><span>LOAD TO</span><button data-target="a">A</button><button data-target="b">B</button><button data-target="cancel">×</button></div>
 
-  <audio id="audio-a" crossorigin="anonymous"></audio>
-  <audio id="audio-b" crossorigin="anonymous"></audio>
-  <script src="/static/dj.js"></script>
-  <script src="/static/hotcues.js"></script>
-  <script src="/static/dragdrop.js"></script>
-  <script src="/static/beatclock.js"></script>
+  <audio id="audio-a" crossorigin="anonymous"></audio><audio id="audio-b" crossorigin="anonymous"></audio>
+  <script src="/static/dj.js"></script><script src="/static/audio_master.js"></script><script src="/static/hotcues.js"></script><script src="/static/dragdrop.js"></script><script src="/static/beatclock.js"></script>
 </body>
 </html>
