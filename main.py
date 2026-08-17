@@ -42,7 +42,6 @@ def choose_folder(initial_dir: Path | None = None):
     initial = str(initial_dir or Path.home())
 
     if os.name == "nt":
-        # Native Windows folder picker in a separate STA PowerShell process.
         script = (
             "Add-Type -AssemblyName System.Windows.Forms; "
             "$d = New-Object System.Windows.Forms.FolderBrowserDialog; "
@@ -67,7 +66,6 @@ def choose_folder(initial_dir: Path | None = None):
         except (OSError, subprocess.SubprocessError):
             return None
 
-    # Fallback for macOS/Linux Python installations with Tk available.
     try:
         import tkinter as tk
         from tkinter import filedialog
@@ -260,4 +258,12 @@ if __name__ == "__main__":
     print("REGIA:   http://127.0.0.1:5000/regia")
     print("OUTPUT:  http://127.0.0.1:5000/output")
     print("DJ:      http://127.0.0.1:5000/dj")
-    app.run(host="127.0.0.1", port=5000, debug=True)
+    # Keep the reloader, but disable Werkzeug's interactive debugger because
+    # Werkzeug reserves /console for its own debug console.
+    app.run(
+        host="127.0.0.1",
+        port=5000,
+        debug=True,
+        use_debugger=False,
+        use_reloader=True,
+    )
