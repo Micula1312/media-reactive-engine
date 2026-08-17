@@ -5,6 +5,7 @@ import subprocess
 
 from flask import Flask, jsonify, render_template, request, send_file
 from media_library import scan_media_library, resolve_media_path
+from preset_manager import list_presets, load_preset, save_preset
 
 app = Flask(__name__)
 APP_NAME = "magic-mic"
@@ -132,6 +133,27 @@ def update_audio_state():
     for key in AUDIO_STATE:
         if key in payload:AUDIO_STATE[key]=payload[key]
     return jsonify(AUDIO_STATE)
+@app.get("/api/presets")
+def presets_index(): return jsonify(list_presets())
+@app.post("/api/presets")
+def presets_save():
+    payload=request.get_json(silent=True) or {}; name=str(payload.get("name") or "preset").strip()
+    return jsonify(save_preset(name,VISUAL_STATE,AUDIO_STATE))
+@app.post("/api/presets/<preset_id>/load")
+def presets_load(preset_id):
+    preset=load_preset(preset_id)
+    if not preset:return jsonify({"error":"Preset not found"}),404
+    visual=preset.get("visual_state")
+    if isinstance(visual,dict): merge_visual_state(visual)
+    else:
+        legacy=preset.get("video",{}); master=legacy.get("master",{}) if isinstance(legacy,dict) else {}
+        patch={"crossfader":legacy.get("crossfader",VISUAL_STATE["crossfader"]),"master_opacity":master.get("opacity",1),"master_brightness":master.get("brightness",1),"master_contrast":master.get("contrast",1),"master_blur":master.get("blur",0),"fx_glitch":master.get("glitch",0),"fx_rgb":master.get("rgb_split",0),"fx_invert":master.get("invert",0)}
+        merge_visual_state(patch)
+    audio=preset.get("audio_state")
+    if isinstance(audio,dict):
+        for key in AUDIO_STATE:
+            if key in audio and key not in {"level","bass","mid","high","beat","beat_count"}: AUDIO_STATE[key]=audio[key]
+    return jsonify({"id":preset_id,"name":preset.get("name",preset_id),"visual_state":VISUAL_STATE,"audio_state":AUDIO_STATE})
 @app.get("/media")
 def media_file():
     relative_path=request.args.get("path","");source=request.args.get("source");root=AUDIO_ROOT if source=="audio" else VISUAL_ROOT if source=="visual" else MEDIA_ROOT;target=resolve_media_path(root,relative_path)
