@@ -27,20 +27,15 @@ def ensure_app_folders():
     DEFAULT_AUDIO_ROOT.mkdir(parents=True, exist_ok=True)
 
 def load_config():
-    ensure_app_folders()
-    data = {}
+    ensure_app_folders(); data = {}
     source_config = CONFIG_FILE if CONFIG_FILE.exists() else LEGACY_CONFIG_FILE if LEGACY_CONFIG_FILE.exists() else None
     try:
-        if source_config:
-            data = json.loads(source_config.read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError, TypeError):
-        data = {}
+        if source_config: data = json.loads(source_config.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError, TypeError): data = {}
     collection = Path(data.get("collection_root") or DEFAULT_COLLECTION_ROOT).expanduser().resolve()
     visual = Path(data.get("visual_root") or (collection / "video")).expanduser().resolve()
     audio = Path(data.get("audio_root") or (collection / "audio")).expanduser().resolve()
-    collection.mkdir(parents=True, exist_ok=True)
-    visual.mkdir(parents=True, exist_ok=True)
-    audio.mkdir(parents=True, exist_ok=True)
+    collection.mkdir(parents=True, exist_ok=True); visual.mkdir(parents=True, exist_ok=True); audio.mkdir(parents=True, exist_ok=True)
     return collection, visual, audio
 
 def save_config():
@@ -53,26 +48,21 @@ def choose_folder(initial_dir=None, title="Choose Media Folder"):
         script = ("Add-Type -AssemblyName System.Windows.Forms; $d = New-Object System.Windows.Forms.FolderBrowserDialog; " + f"$d.Description = {json.dumps(title)}; $d.SelectedPath = {json.dumps(initial)}; " + "$d.ShowNewFolderButton = $true; if ($d.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK) { [Console]::Write($d.SelectedPath) }")
         try:
             result = subprocess.run(["powershell.exe", "-NoProfile", "-STA", "-Command", script], capture_output=True, text=True, timeout=120, check=False)
-            selected = result.stdout.strip()
-            return Path(selected).expanduser().resolve() if selected else None
-        except (OSError, subprocess.SubprocessError):
-            return None
+            selected = result.stdout.strip(); return Path(selected).expanduser().resolve() if selected else None
+        except (OSError, subprocess.SubprocessError): return None
     try:
         import tkinter as tk
         from tkinter import filedialog
         root = tk.Tk(); root.withdraw(); root.attributes("-topmost", True)
-        selected = filedialog.askdirectory(initialdir=initial, title=title)
-        root.destroy()
+        selected = filedialog.askdirectory(initialdir=initial, title=title); root.destroy()
         return Path(selected).expanduser().resolve() if selected else None
-    except Exception:
-        return None
+    except Exception: return None
 
 MEDIA_ROOT, VISUAL_ROOT, AUDIO_ROOT = load_config()
-if not CONFIG_FILE.exists() and LEGACY_CONFIG_FILE.exists():
-    save_config()
+if not CONFIG_FILE.exists() and LEGACY_CONFIG_FILE.exists(): save_config()
 
 def empty_deck():
-    return {"source_folder": None, "media": None, "playing": True, "opacity": 1.0, "scale": 1.0, "speed": 1.0, "cut_token": None, "cut_position": None}
+    return {"source_folder": None, "media": None, "playing": True, "opacity": 1.0, "scale": 1.0, "scale_reactive": False, "speed": 1.0, "cut_token": None, "cut_position": None}
 
 VISUAL_STATE = {"decks": {"a": empty_deck(), "b": empty_deck()}, "crossfader": 0.0, "blackout": False, "audio_reactive": True, "reactivity": 0.55, "master_opacity": 1.0, "master_brightness": 1.0, "master_contrast": 1.0, "master_saturation": 1.0, "master_hue": 0.0, "master_blur": 0.0, "global_master": 1.0, "common_intensity": 0.0, "common_filter": 0.0, "common_pulse": 0.0, "common_strobe": 0.0, "fx_glitch": 0.0, "fx_rgb": 0.0, "fx_invert": 0.0, "text_enabled": False, "text_content": "", "text_size": 64.0, "text_opacity": 1.0}
 AUDIO_STATE = {"level": 0.0, "bass": 0.0, "mid": 0.0, "high": 0.0, "beat": False, "beat_count": 0, "crossfader": 0.0, "deck_a": None, "deck_b": None}
@@ -80,16 +70,14 @@ AUDIO_STATE = {"level": 0.0, "bass": 0.0, "mid": 0.0, "high": 0.0, "beat": False
 def merge_visual_state(payload):
     keys = ("crossfader", "blackout", "audio_reactive", "reactivity", "master_opacity", "master_brightness", "master_contrast", "master_saturation", "master_hue", "master_blur", "global_master", "common_intensity", "common_filter", "common_pulse", "common_strobe", "fx_glitch", "fx_rgb", "fx_invert", "text_enabled", "text_content", "text_size", "text_opacity")
     for key in keys:
-        if key in payload:
-            VISUAL_STATE[key] = payload[key]
+        if key in payload: VISUAL_STATE[key] = payload[key]
     decks = payload.get("decks")
     if isinstance(decks, dict):
         for name in ("a", "b"):
             patch = decks.get(name)
             if isinstance(patch, dict):
                 for key in empty_deck():
-                    if key in patch:
-                        VISUAL_STATE["decks"][name][key] = patch[key]
+                    if key in patch: VISUAL_STATE["decks"][name][key] = patch[key]
 
 @app.get("/")
 @app.get("/console")
@@ -120,8 +108,7 @@ def select_media_root():
 def select_library_root(kind):
     global VISUAL_ROOT, AUDIO_ROOT
     if kind not in {"visual", "audio"}: return jsonify({"error": "Unknown library type"}), 400
-    current = VISUAL_ROOT if kind == "visual" else AUDIO_ROOT
-    selected = choose_folder(current, f"Choose {kind.title()} Library Folder")
+    current = VISUAL_ROOT if kind == "visual" else AUDIO_ROOT; selected = choose_folder(current, f"Choose {kind.title()} Library Folder")
     if not selected: return jsonify({"cancelled": True, "kind": kind, "path": str(current)})
     if kind == "visual": VISUAL_ROOT = selected
     else: AUDIO_ROOT = selected
@@ -132,9 +119,7 @@ def select_library_root(kind):
 def get_visual_state(): return jsonify(VISUAL_STATE)
 @app.post("/api/state")
 @app.post("/api/visual-state")
-def update_visual_state():
-    merge_visual_state(request.get_json(silent=True) or {})
-    return jsonify(VISUAL_STATE)
+def update_visual_state(): merge_visual_state(request.get_json(silent=True) or {}); return jsonify(VISUAL_STATE)
 @app.get("/api/audio-state")
 def get_audio_state(): return jsonify(AUDIO_STATE)
 @app.post("/api/audio-state")
@@ -152,9 +137,5 @@ def media_file():
     return send_file(target, conditional=True)
 
 if __name__ == "__main__":
-    print(f"magic-mic")
-    print(f"MEDIA COLLECTION: {MEDIA_ROOT}")
-    print(f"VIDEO LIBRARY:    {VISUAL_ROOT}")
-    print(f"AUDIO LIBRARY:    {AUDIO_ROOT}")
-    print("CONSOLE: http://127.0.0.1:5000/console")
+    print("magic-mic"); print(f"MEDIA COLLECTION: {MEDIA_ROOT}"); print(f"VIDEO LIBRARY:    {VISUAL_ROOT}"); print(f"AUDIO LIBRARY:    {AUDIO_ROOT}"); print("CONSOLE: http://127.0.0.1:5000/console")
     app.run(host="127.0.0.1", port=5000, debug=True, use_debugger=False, use_reloader=True)
