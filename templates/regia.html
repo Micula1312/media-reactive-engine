@@ -9,87 +9,31 @@
   <link rel="stylesheet" href="/static/video_console.css">
 </head>
 <body class="regia-page">
-  <header class="topbar">
-    <div><strong>magic-mic</strong> <span class="muted">VIDEO MIXER</span></div>
-    <nav><a href="/dj" target="_blank">DJ ↗</a><a href="/output" target="_blank">OUTPUT ↗</a></nav>
-  </header>
-
+  <header class="topbar"><div><strong>magic-mic</strong> <span class="muted">VIDEO MIXER</span></div><nav><a href="/dj" target="_blank">DJ ↗</a><a href="/output" target="_blank">OUTPUT ↗</a></nav></header>
   <main class="visual-console">
-    <aside class="panel library-panel">
-      <div class="panel-title">MEDIATECA / VIDEO</div>
-      <div id="library-status" class="muted">Caricamento…</div>
-      <div id="folders"></div>
-    </aside>
-
+    <aside class="panel library-panel"><div class="panel-title">MEDIATECA / VIDEO</div><div id="library-status" class="muted">Caricamento…</div><div id="folders"></div></aside>
     <section class="visual-mixer">
-      <section class="master-strip compact-master-strip">
-        <label class="crossfader"><span>A</span><input id="crossfader" type="range" min="0" max="1" step=".001" value="0"><span>B</span></label>
-        <div class="inline-reactivity">
-          <label class="toggle-line"><input id="audio-reactive" type="checkbox" checked> AUDIO REACTIVE</label>
-          <label>AMOUNT <input id="reactivity" data-midi-param="video.reactivity" type="range" min="0" max="1" step=".01" value=".55"></label>
-        </div>
-      </section>
-
+      <section class="master-strip compact-master-strip"><label class="crossfader"><span>A</span><input id="crossfader" type="range" min="0" max="1" step=".001" value="0"><span>B</span></label><div class="inline-reactivity"><label class="toggle-line"><input id="audio-reactive" type="checkbox" checked> AUDIO REACTIVE</label><label>AMOUNT <input id="reactivity" data-midi-param="video.reactivity" type="range" min="0" max="1" step=".01" value=".55"></label></div></section>
       <div class="decks-grid">
-        <article class="panel deck-panel" data-deck="a">
-          <div class="deck-title">DECK A <span id="deck-a-folder" class="muted">—</span></div>
-          <div id="preview-a" class="preview"><span class="muted">Seleziona un media per A</span></div>
+        <article class="panel deck-panel" data-deck="a"><div class="deck-title">DECK A <span id="deck-a-folder" class="muted">—</span></div><div id="preview-a" class="preview"><span class="muted">Seleziona un media per A</span></div>
           <div class="controls compact-video-controls">
-            <label>OPACITY <input id="opacity-a" type="range" min="0" max="1" step=".01" value="1"></label>
-            <label class="scale-control"><span>SCALE <small title="Audio reactive scale"><input id="scale-reactive-a" type="checkbox"> AR</small></span><input id="scale-a" type="range" min=".5" max="2.5" step=".01" value="1"></label>
-            <label>SPEED <input id="speed-a" type="range" min=".2" max="3" step=".05" value="1"></label>
-          </div>
-          <div class="button-row"><button id="play-a">PAUSE</button><button id="random-a">RANDOM A</button></div>
-          <div class="beat-switch-panel">
-            <label class="beat-switch-toggle"><input id="beat-switch-a" type="checkbox"> BEAT SWITCH</label>
-            <label>EVERY <select id="beat-every-a"><option value="1">1 beat</option><option value="2">2 beats</option><option value="4" selected>4 beats</option><option value="8">8 beats</option><option value="16">16 beats</option></select></label>
-            <label>MODE <select id="beat-mode-a"><option value="next">NEXT</option><option value="random" selected>RANDOM CLIP</option><option value="cut">RANDOM CUT</option></select></label>
-            <label>SOURCE <select id="beat-folder-a"></select></label>
-          </div>
-          <div class="now-playing"><span class="muted">A</span><strong id="now-a">—</strong></div>
-        </article>
-
-        <article class="panel deck-panel" data-deck="b">
-          <div class="deck-title">DECK B <span id="deck-b-folder" class="muted">—</span></div>
-          <div id="preview-b" class="preview"><span class="muted">Seleziona un media per B</span></div>
+            <label class="reactive-param"><span>OPACITY <small title="Audio reactive opacity"><input id="opacity-reactive-a" type="checkbox"> AR</small></span><input id="opacity-a" type="range" min="0" max="1" step=".01" value="1"></label>
+            <label class="reactive-param"><span>SCALE <small title="Audio reactive scale"><input id="scale-reactive-a" type="checkbox"> AR</small></span><input id="scale-a" type="range" min=".5" max="2.5" step=".01" value="1"></label>
+            <label class="reactive-param"><span>SPEED <small title="Audio reactive speed"><input id="speed-reactive-a" type="checkbox"> AR</small></span><input id="speed-a" type="range" min=".2" max="3" step=".05" value="1"></label>
+          </div><div class="button-row"><button id="play-a">PAUSE</button><button id="random-a">RANDOM A</button></div>
+          <div class="beat-switch-panel"><label class="beat-switch-toggle"><input id="beat-switch-a" type="checkbox"> BEAT SWITCH</label><label>EVERY <select id="beat-every-a"><option value="1">1 beat</option><option value="2">2 beats</option><option value="4" selected>4 beats</option><option value="8">8 beats</option><option value="16">16 beats</option></select></label><label>MODE <select id="beat-mode-a"><option value="next">NEXT</option><option value="random" selected>RANDOM CLIP</option><option value="cut">RANDOM CUT</option></select></label><label>SOURCE <select id="beat-folder-a"></select></label></div><div class="now-playing"><span class="muted">A</span><strong id="now-a">—</strong></div></article>
+        <article class="panel deck-panel" data-deck="b"><div class="deck-title">DECK B <span id="deck-b-folder" class="muted">—</span></div><div id="preview-b" class="preview"><span class="muted">Seleziona un media per B</span></div>
           <div class="controls compact-video-controls">
-            <label>OPACITY <input id="opacity-b" type="range" min="0" max="1" step=".01" value="1"></label>
-            <label class="scale-control"><span>SCALE <small title="Audio reactive scale"><input id="scale-reactive-b" type="checkbox"> AR</small></span><input id="scale-b" type="range" min=".5" max="2.5" step=".01" value="1"></label>
-            <label>SPEED <input id="speed-b" type="range" min=".2" max="3" step=".05" value="1"></label>
-          </div>
-          <div class="button-row"><button id="play-b">PAUSE</button><button id="random-b">RANDOM B</button></div>
-          <div class="beat-switch-panel">
-            <label class="beat-switch-toggle"><input id="beat-switch-b" type="checkbox"> BEAT SWITCH</label>
-            <label>EVERY <select id="beat-every-b"><option value="1">1 beat</option><option value="2">2 beats</option><option value="4" selected>4 beats</option><option value="8">8 beats</option><option value="16">16 beats</option></select></label>
-            <label>MODE <select id="beat-mode-b"><option value="next">NEXT</option><option value="random" selected>RANDOM CLIP</option><option value="cut">RANDOM CUT</option></select></label>
-            <label>SOURCE <select id="beat-folder-b"></select></label>
-          </div>
-          <div class="now-playing"><span class="muted">B</span><strong id="now-b">—</strong></div>
-        </article>
+            <label class="reactive-param"><span>OPACITY <small title="Audio reactive opacity"><input id="opacity-reactive-b" type="checkbox"> AR</small></span><input id="opacity-b" type="range" min="0" max="1" step=".01" value="1"></label>
+            <label class="reactive-param"><span>SCALE <small title="Audio reactive scale"><input id="scale-reactive-b" type="checkbox"> AR</small></span><input id="scale-b" type="range" min=".5" max="2.5" step=".01" value="1"></label>
+            <label class="reactive-param"><span>SPEED <small title="Audio reactive speed"><input id="speed-reactive-b" type="checkbox"> AR</small></span><input id="speed-b" type="range" min=".2" max="3" step=".05" value="1"></label>
+          </div><div class="button-row"><button id="play-b">PAUSE</button><button id="random-b">RANDOM B</button></div>
+          <div class="beat-switch-panel"><label class="beat-switch-toggle"><input id="beat-switch-b" type="checkbox"> BEAT SWITCH</label><label>EVERY <select id="beat-every-b"><option value="1">1 beat</option><option value="2">2 beats</option><option value="4" selected>4 beats</option><option value="8">8 beats</option><option value="16">16 beats</option></select></label><label>MODE <select id="beat-mode-b"><option value="next">NEXT</option><option value="random" selected>RANDOM CLIP</option><option value="cut">RANDOM CUT</option></select></label><label>SOURCE <select id="beat-folder-b"></select></label></div><div class="now-playing"><span class="muted">B</span><strong id="now-b">—</strong></div></article>
       </div>
-
-      <section id="output-preview-panel" class="output-preview-panel">
-        <div class="output-preview-head">
-          <div><span class="panel-title">LIVE OUTPUT</span><span class="muted"> / compositing finale</span></div>
-          <div class="output-preview-actions"><button id="detach-output" type="button">DETACH ↗</button><a class="output-preview-open" href="/output" target="_blank">FULLSCREEN ↗</a></div>
-        </div>
-        <div class="output-preview-frame"><iframe id="embedded-output" src="/output" title="Live output preview" loading="eager"></iframe></div>
-        <div class="detached-placeholder">OUTPUT DETACHED — popup attivo</div>
-      </section>
-
-      <section class="text-overlay-panel">
-        <div class="panel-title">TEXT OVERLAY</div>
-        <div class="text-overlay-controls">
-          <button id="text-toggle" type="button">TEXT OFF</button>
-          <input id="text-content" type="text" placeholder="scrivi il testo da sovrapporre…">
-          <label>SIZE <input id="text-size" data-midi-param="video.text_size" type="range" min="12" max="180" step="1" value="64"></label>
-          <label>OPACITY <input id="text-opacity" data-midi-param="video.text_opacity" type="range" min="0" max="1" step=".01" value="1"></label>
-        </div>
-      </section>
+      <section id="output-preview-panel" class="output-preview-panel"><div class="output-preview-head"><div><span class="panel-title">LIVE OUTPUT</span><span class="muted"> / compositing finale</span></div><div class="output-preview-actions"><button id="detach-output" type="button">DETACH ↗</button><a class="output-preview-open" href="/output" target="_blank">FULLSCREEN ↗</a></div></div><div class="output-preview-frame"><iframe id="embedded-output" src="/output" title="Live output preview" loading="eager"></iframe></div><div class="detached-placeholder">OUTPUT DETACHED — popup attivo</div></section>
+      <section class="text-overlay-panel"><div class="panel-title">TEXT OVERLAY</div><div class="text-overlay-controls"><button id="text-toggle" type="button">TEXT OFF</button><input id="text-content" type="text" placeholder="scrivi il testo da sovrapporre…"><label>SIZE <input id="text-size" data-midi-param="video.text_size" type="range" min="12" max="180" step="1" value="64"></label><label>OPACITY <input id="text-opacity" data-midi-param="video.text_opacity" type="range" min="0" max="1" step=".01" value="1"></label></div></section>
     </section>
   </main>
-
   <div id="deck-picker" class="deck-picker hidden"><span>LOAD TO</span><button data-target="a">A</button><button data-target="b">B</button><button data-target="cancel">×</button></div>
   <script src="/static/regia.js"></script><script src="/static/dragdrop.js"></script><script src="/static/beatswitch.js"></script>
-</body>
-</html>
+</body></html>
