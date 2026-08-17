@@ -188,7 +188,8 @@ def dj():
 
 @app.get("/api/library")
 def library():
-    return jsonify(scan_media_library(MEDIA_ROOT))
+    # Backwards-compatible endpoint used by the DJ view.
+    return jsonify(scan_media_library(AUDIO_ROOT, source="audio"))
 
 
 @app.get("/api/library/visual")
