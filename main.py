@@ -125,6 +125,7 @@ VISUAL_STATE = {
     "master_saturation": 1.0,
     "master_hue": 0.0,
     "master_blur": 0.0,
+    "global_master": 1.0,
     "common_intensity": 0.0,
     "common_filter": 0.0,
     "common_pulse": 0.0,
@@ -148,7 +149,7 @@ def merge_visual_state(payload):
     top_level_keys = (
         "crossfader", "blackout", "audio_reactive", "reactivity",
         "master_opacity", "master_brightness", "master_contrast",
-        "master_saturation", "master_hue", "master_blur",
+        "master_saturation", "master_hue", "master_blur", "global_master",
         "common_intensity", "common_filter", "common_pulse", "common_strobe",
     )
     for key in top_level_keys:
@@ -170,37 +171,29 @@ def merge_visual_state(payload):
 def console():
     return render_template("console.html")
 
-
 @app.get("/regia")
 def regia():
     return render_template("regia.html")
-
 
 @app.get("/output")
 def output():
     return render_template("output.html")
 
-
 @app.get("/dj")
 def dj():
     return render_template("dj.html")
 
-
 @app.get("/api/library")
 def library():
-    # Backwards-compatible endpoint used by the DJ view.
     return jsonify(scan_media_library(AUDIO_ROOT, source="audio"))
-
 
 @app.get("/api/library/visual")
 def visual_library():
     return jsonify(scan_media_library(VISUAL_ROOT, source="visual"))
 
-
 @app.get("/api/library/audio")
 def audio_library():
     return jsonify(scan_media_library(AUDIO_ROOT, source="audio"))
-
 
 @app.get("/api/config")
 def config():
@@ -213,62 +206,41 @@ def config():
         "saved": CONFIG_FILE.exists(),
     })
 
-
 @app.post("/api/select-media-root")
 def select_media_root():
     global MEDIA_ROOT, VISUAL_ROOT, AUDIO_ROOT
-
     selected = choose_folder(MEDIA_ROOT, "Choose Media Collection Folder")
     if not selected:
         return jsonify({"cancelled": True, "media_root": str(MEDIA_ROOT)})
-
     MEDIA_ROOT = selected
     VISUAL_ROOT = MEDIA_ROOT / "video"
     AUDIO_ROOT = MEDIA_ROOT / "audio"
     VISUAL_ROOT.mkdir(parents=True, exist_ok=True)
     AUDIO_ROOT.mkdir(parents=True, exist_ok=True)
     save_config()
-
-    return jsonify({
-        "cancelled": False,
-        "media_root": str(MEDIA_ROOT),
-        "visual_root": str(VISUAL_ROOT),
-        "audio_root": str(AUDIO_ROOT),
-    })
-
+    return jsonify({"cancelled": False, "media_root": str(MEDIA_ROOT), "visual_root": str(VISUAL_ROOT), "audio_root": str(AUDIO_ROOT)})
 
 @app.post("/api/select-library-root/<kind>")
 def select_library_root(kind):
     global VISUAL_ROOT, AUDIO_ROOT
     if kind not in {"visual", "audio"}:
         return jsonify({"error": "Unknown library type"}), 400
-
     current = VISUAL_ROOT if kind == "visual" else AUDIO_ROOT
     selected = choose_folder(current, f"Choose {kind.title()} Library Folder")
     if not selected:
         return jsonify({"cancelled": True, "kind": kind, "path": str(current)})
-
     if kind == "visual":
         VISUAL_ROOT = selected
     else:
         AUDIO_ROOT = selected
     save_config()
-
     scanned = scan_media_library(selected, source=kind)
-    return jsonify({
-        "cancelled": False,
-        "kind": kind,
-        "path": str(selected),
-        "total_files": scanned.get("total_files", 0),
-        "folders": len(scanned.get("folders", [])),
-    })
-
+    return jsonify({"cancelled": False, "kind": kind, "path": str(selected), "total_files": scanned.get("total_files", 0), "folders": len(scanned.get("folders", []))})
 
 @app.get("/api/state")
 @app.get("/api/visual-state")
 def get_visual_state():
     return jsonify(VISUAL_STATE)
-
 
 @app.post("/api/state")
 @app.post("/api/visual-state")
@@ -277,11 +249,9 @@ def update_visual_state():
     merge_visual_state(payload)
     return jsonify(VISUAL_STATE)
 
-
 @app.get("/api/audio-state")
 def get_audio_state():
     return jsonify(AUDIO_STATE)
-
 
 @app.post("/api/audio-state")
 def update_audio_state():
@@ -290,7 +260,6 @@ def update_audio_state():
         if key in payload:
             AUDIO_STATE[key] = payload[key]
     return jsonify(AUDIO_STATE)
-
 
 @app.get("/media")
 def media_file():
@@ -302,19 +271,12 @@ def media_file():
         return jsonify({"error": "Media not found"}), 404
     return send_file(target, conditional=True)
 
-
 if __name__ == "__main__":
     print(f"MEDIA COLLECTION: {MEDIA_ROOT}")
-    print(f"VISUAL LIBRARY:   {VISUAL_ROOT}")
+    print(f"VIDEO LIBRARY:    {VISUAL_ROOT}")
     print(f"AUDIO LIBRARY:    {AUDIO_ROOT}")
     print("CONSOLE: http://127.0.0.1:5000/console")
     print("REGIA:   http://127.0.0.1:5000/regia")
     print("OUTPUT:  http://127.0.0.1:5000/output")
     print("DJ:      http://127.0.0.1:5000/dj")
-    app.run(
-        host="127.0.0.1",
-        port=5000,
-        debug=True,
-        use_debugger=False,
-        use_reloader=True,
-    )
+    app.run(host="127.0.0.1", port=5000, debug=True, use_debugger=False, use_reloader=True)
