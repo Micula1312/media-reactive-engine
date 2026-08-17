@@ -21,20 +21,8 @@
     </aside>
 
     <section class="visual-mixer">
-      <section class="master-strip">
+      <section class="master-strip compact-master-strip">
         <label class="crossfader"><span>A</span><input id="crossfader" type="range" min="0" max="1" step=".001" value="0"><span>B</span></label>
-        <div class="audio-reactive-block">
-          <label><input id="audio-reactive" type="checkbox" checked> AUDIO REACTIVE</label>
-          <label>AMOUNT <input id="reactivity" type="range" min="0" max="1" step=".01" value=".55"></label>
-          <div class="meters">
-            <div><span>LEVEL</span><i id="meter-level"></i></div>
-            <div><span>BASS</span><i id="meter-bass"></i></div>
-            <div><span>MID</span><i id="meter-mid"></i></div>
-            <div><span>HIGH</span><i id="meter-high"></i></div>
-          </div>
-          <div class="visual-beat-clock">BEAT COUNT <strong id="visual-beat-count">0</strong></div>
-        </div>
-        <button id="blackout" class="blackout-button">BLACKOUT</button>
       </section>
 
       <div class="decks-grid">
