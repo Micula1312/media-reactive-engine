@@ -1,0 +1,63 @@
+{
+  "name": "Default",
+  "description": "Neutral startup configuration for magic-mic",
+  "version": 1,
+  "video": {
+    "crossfader": 0.0,
+    "decks": {
+      "a": {
+        "opacity": 1.0,
+        "opacity_reactive": false,
+        "scale": 1.0,
+        "scale_reactive": false,
+        "speed": 1.0,
+        "speed_reactive": false
+      },
+      "b": {
+        "opacity": 1.0,
+        "opacity_reactive": false,
+        "scale": 1.0,
+        "scale_reactive": false,
+        "speed": 1.0,
+        "speed_reactive": false
+      }
+    },
+    "master": {
+      "opacity": 1.0,
+      "brightness": 1.0,
+      "brightness_reactive": false,
+      "brightness_amount": 0.0,
+      "contrast": 1.0,
+      "contrast_reactive": false,
+      "contrast_amount": 0.0,
+      "blur": 0.0,
+      "blur_reactive": false,
+      "blur_amount": 0.0,
+      "glitch": 0.0,
+      "glitch_reactive": false,
+      "glitch_amount": 0.0,
+      "rgb_split": 0.0,
+      "rgb_split_reactive": false,
+      "rgb_split_amount": 0.0,
+      "invert": 0.0,
+      "invert_reactive": false,
+      "invert_amount": 0.0
+    },
+    "text": {
+      "enabled": false,
+      "content": "",
+      "size": 64.0,
+      "opacity": 1.0
+    }
+  },
+  "shared": {
+    "global_master": 1.0,
+    "intensity": 0.0,
+    "filter": 0.0,
+    "pulse": 0.0,
+    "strobe": 0.0
+  },
+  "audio": {
+    "crossfader": 0.0
+  }
+}
