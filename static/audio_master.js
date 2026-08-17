@@ -9,8 +9,48 @@
   let recorder = null;
   let chunks = [];
 
+  let masterVolumeBase = 1;
+  let commonIntensity = 0;
+  let commonFilter = 0;
+  let commonPulse = 0;
+  let lastPulseAt = 0;
+
   function post(type, payload = {}) {
     window.parent.postMessage({source: 'media-reactive-dj', type, ...payload}, '*');
+  }
+
+  function effectiveMasterGain() {
+    return masterVolumeBase * (1 + commonIntensity * 0.18);
+  }
+
+  function applyMasterGain(immediate = true) {
+    ensureAudioGraph();
+    const value = effectiveMasterGain();
+    if (immediate) masterGain.gain.value = value;
+    else masterGain.gain.setTargetAtTime(value, audioContext.currentTime, 0.035);
+  }
+
+  function applyCommonFilter(value) {
+    ensureAudioGraph();
+    commonFilter = Math.max(-1, Math.min(1, Number(value) || 0));
+
+    for (const deck of ['a', 'b']) {
+      const nodes = deckNodes[deck];
+      if (!nodes) continue;
+
+      if (commonFilter < 0) {
+        const t = Math.abs(commonFilter);
+        nodes.low.frequency.setTargetAtTime(20000 * Math.pow(180 / 20000, t), audioContext.currentTime, 0.025);
+        nodes.high.frequency.setTargetAtTime(20, audioContext.currentTime, 0.025);
+      } else if (commonFilter > 0) {
+        const t = commonFilter;
+        nodes.high.frequency.setTargetAtTime(20 * Math.pow(5200 / 20, t), audioContext.currentTime, 0.025);
+        nodes.low.frequency.setTargetAtTime(20000, audioContext.currentTime, 0.025);
+      } else {
+        nodes.low.frequency.setTargetAtTime(20000, audioContext.currentTime, 0.025);
+        nodes.high.frequency.setTargetAtTime(20, audioContext.currentTime, 0.025);
+      }
+    }
   }
 
   function ensureRecordBus() {
@@ -60,10 +100,19 @@
   }
 
   function setMasterVolume(value) {
-    ensureAudioGraph();
-    masterGain.gain.value = Number(value);
+    masterVolumeBase = Number(value);
+    applyMasterGain();
     const slider = document.querySelector('#master-volume');
     if (slider) slider.value = Number(value);
+  }
+
+  function setCommonIntensity(value) {
+    commonIntensity = Math.max(0, Math.min(1, Number(value) || 0));
+    applyMasterGain(false);
+  }
+
+  function setCommonPulse(value) {
+    commonPulse = Math.max(0, Math.min(1, Number(value) || 0));
   }
 
   function startRecording() {
@@ -94,6 +143,20 @@
     if (recorder?.state === 'recording') recorder.stop();
   }
 
+  // Pulse the audio master on detected beats. This uses the same beat detector
+  // already driving the VJ side, so one MIDI macro can affect both engines.
+  setInterval(() => {
+    if (!audioContext || commonPulse <= 0) return;
+    const beatOn = document.querySelector('#dj-beat')?.textContent === '●';
+    const now = performance.now();
+    if (!beatOn || now - lastPulseAt < 160) return;
+    lastPulseAt = now;
+    const base = effectiveMasterGain();
+    masterGain.gain.cancelScheduledValues(audioContext.currentTime);
+    masterGain.gain.setValueAtTime(base * (1 + commonPulse * 0.22), audioContext.currentTime);
+    masterGain.gain.exponentialRampToValueAtTime(Math.max(0.001, base), audioContext.currentTime + 0.11);
+  }, 30);
+
   window.addEventListener('message', async event => {
     const data = event.data;
     if (!data || data.source !== 'media-reactive-console') return;
@@ -103,6 +166,9 @@
         case 'mic-gain': setMicGain(data.value); break;
         case 'mic-monitor': setMonitor(Boolean(data.enabled)); break;
         case 'master-volume': setMasterVolume(data.value); break;
+        case 'common-intensity': setCommonIntensity(data.value); break;
+        case 'common-filter': applyCommonFilter(data.value); break;
+        case 'common-pulse': setCommonPulse(data.value); break;
         case 'record-start': startRecording(); break;
         case 'record-stop': stopRecording(); break;
       }
