@@ -18,26 +18,28 @@
       <button id="choose-folder">CHOOSE FOLDER</button>
       <button id="reload-all">RESCAN</button>
     </div>
-    <div class="layout-controls">
-      <a href="/output" target="_blank">OUTPUT ↗</a>
-    </div>
+    <div class="layout-controls"><a href="/output" target="_blank">OUTPUT ↗</a></div>
   </header>
 
   <main class="performance-console">
-    <aside class="media-column visual-library">
-      <div class="vertical-label">VISUAL MEDIA</div>
-      <iframe id="vj-library-frame" src="/regia" title="Visual media and mixer"></iframe>
-    </aside>
+    <section class="library-column visual-library">
+      <div class="column-head">VISUAL FOLDERS</div>
+      <div class="frame-crop visual-library-crop">
+        <iframe id="vj-library-frame" src="/regia" title="Visual media library"></iframe>
+      </div>
+    </section>
 
     <section class="machine-column video-machine">
       <div class="machine-head"><strong>VIDEO</strong><span>DECK A / DECK B</span></div>
       <iframe id="vj-frame" src="/regia" title="Video mixer"></iframe>
     </section>
 
-    <aside class="media-column audio-library">
-      <div class="vertical-label">AUDIO MEDIA</div>
-      <iframe id="dj-library-frame" src="/dj" title="Audio media"></iframe>
-    </aside>
+    <section class="library-column audio-library">
+      <div class="column-head">AUDIO FOLDERS</div>
+      <div class="frame-crop audio-library-crop">
+        <iframe id="dj-library-frame" src="/dj" title="Audio media library"></iframe>
+      </div>
+    </section>
 
     <section class="machine-column audio-machine">
       <div class="machine-head"><strong>AUDIO</strong><span>DECK A / DECK B</span></div>
@@ -47,31 +49,17 @@
     <footer class="master-console">
       <section class="master-block video-master">
         <div class="master-title">VIDEO MASTER</div>
-        <div class="preview-shell">
-          <iframe id="output-frame" src="/output" title="Live output"></iframe>
-        </div>
+        <div class="preview-shell"><iframe id="output-frame" src="/output" title="Live output"></iframe></div>
         <a class="master-action" href="/output" target="_blank">FULLSCREEN OUTPUT ↗</a>
       </section>
-
       <section class="master-block global-master">
         <div class="master-title">MASTER GENERALE</div>
-        <div class="master-readout">
-          <span>DJ → AUDIO ANALYSIS → VJ</span>
-          <strong>LEVEL / BASS / MID / HIGH / BEAT</strong>
-        </div>
-        <div class="master-links">
-          <a href="/regia" target="_blank">VJ ↗</a>
-          <a href="/dj" target="_blank">DJ ↗</a>
-          <a href="/output" target="_blank">OUT ↗</a>
-        </div>
+        <div class="master-readout"><span>DJ → AUDIO ANALYSIS → VJ</span><strong>LEVEL / BASS / MID / HIGH / BEAT</strong></div>
+        <div class="master-links"><a href="/regia" target="_blank">VJ ↗</a><a href="/dj" target="_blank">DJ ↗</a><a href="/output" target="_blank">OUT ↗</a></div>
       </section>
-
       <section class="master-block audio-master">
         <div class="master-title">AUDIO MASTER</div>
-        <div class="master-readout">
-          <span>MASTER MIX</span>
-          <strong>A / CROSSFADER / B</strong>
-        </div>
+        <div class="master-readout"><span>MASTER MIX</span><strong>A / CROSSFADER / B</strong></div>
       </section>
     </footer>
   </main>
