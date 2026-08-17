@@ -9,16 +9,26 @@
 <body>
   <header class="console-topbar">
     <div class="brand"><strong>MEDIA REACTIVE ENGINE</strong><span>DJ + VJ PERFORMANCE CONSOLE</span></div>
-    <div class="media-root-control"><span class="label">MEDIA ROOT</span><strong id="media-root">loading…</strong><button id="choose-folder">CHOOSE FOLDER</button><button id="reload-all">RESCAN</button></div>
+    <div class="media-root-control"><span class="label">MEDIA COLLECTION</span><strong id="media-root">loading…</strong><button id="choose-folder">CHOOSE COLLECTION</button><button id="reload-all">RESCAN</button></div>
     <div class="layout-controls"><a href="/output" target="_blank">OUTPUT ↗</a></div>
   </header>
 
   <main class="performance-console">
-    <section class="library-column visual-library"><div class="column-head">VISUAL FOLDERS</div><div class="frame-crop visual-library-crop"><iframe id="vj-library-frame" src="/regia" title="Visual media library"></iframe></div></section>
+    <section class="library-column visual-library">
+      <button id="choose-visual-root" class="column-head library-root-button" title="Choose visual library folder">
+        <span>VISUAL FOLDERS</span><span id="visual-root-label">CHANGE ↗</span>
+      </button>
+      <div class="frame-crop visual-library-crop"><iframe id="vj-library-frame" src="/regia" title="Visual media library"></iframe></div>
+    </section>
 
     <section class="machine-column video-machine"><div class="machine-head"><strong>VIDEO</strong><span>DECK A / DECK B</span></div><iframe id="vj-frame" src="/regia" title="Video mixer"></iframe></section>
 
-    <section class="library-column audio-library"><div class="column-head">AUDIO FOLDERS</div><div class="frame-crop audio-library-crop"><iframe id="dj-library-frame" src="/dj" title="Audio media library"></iframe></div></section>
+    <section class="library-column audio-library">
+      <button id="choose-audio-root" class="column-head library-root-button" title="Choose audio library folder">
+        <span>AUDIO FOLDERS</span><span id="audio-root-label">CHANGE ↗</span>
+      </button>
+      <div class="frame-crop audio-library-crop"><iframe id="dj-library-frame" src="/dj" title="Audio media library"></iframe></div>
+    </section>
 
     <section class="machine-column audio-machine"><div class="machine-head"><strong>AUDIO</strong><span>DECK A / DECK B</span></div><iframe id="dj-frame" src="/dj" title="DJ mixer"></iframe></section>
 
